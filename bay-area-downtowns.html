@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Downtown Ledger — A Bay Area Field Survey</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1E2A24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -104,10 +110,32 @@
   tr.detail{ display:none; }
   tr.detail.open{ display:table-row; }
   tr.detail td{ background:var(--paper-alt); border-bottom:1px solid var(--line); padding:14px 16px 16px 34px; }
-  .detail-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+  .detail-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:18px; }
   .detail-block h4{ margin:0 0 5px; font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--rust); }
   .detail-block p{ margin:0; font-size:13px; line-height:1.55; color:var(--ink); }
   .detail-geo{ margin-top:10px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); }
+
+  /* Structured fields, shown as a fact strip under the prose blocks. */
+  .facts{ display:flex; flex-wrap:wrap; gap:6px 10px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+  .fact{ font-size:12.5px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:2px; padding:4px 9px; }
+  .fact b{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin-right:6px; }
+  .fact a{ cursor:pointer; text-decoration:underline; }
+  .align-dates{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  .align-none{ color:var(--ink-soft); }
+
+  /* Visit tracking. */
+  .status-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; }
+  .st-btn{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:6px 10px; border:1px solid var(--line); background:var(--card); color:var(--ink-soft);
+    border-radius:2px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .st-btn .dot{ width:8px; height:8px; border-radius:50%; background:var(--line); flex:none; }
+  .st-btn.on{ border-color:var(--ink); color:var(--ink); font-weight:600; }
+  .st-note{ width:100%; margin-top:8px; font-family:'IBM Plex Sans', sans-serif; font-size:13px; line-height:1.5;
+    padding:8px 10px; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:2px;
+    resize:vertical; min-height:52px; }
+  .st-square{ display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:7px;
+    transform:translateY(-1px); flex:none; }
+  .st-square.unvisited{ background:transparent; border:1px solid var(--line); }
 
   footer{ max-width:1260px; margin:0 auto 60px; padding:18px 28px 0; border-top:1px solid var(--line); font-size:12px; color:var(--ink-soft); line-height:1.6; }
   footer b{ color:var(--ink); }
@@ -160,11 +188,15 @@
       <option value="type">Verdict</option>
       <option value="region">Region</option>
       <option value="origin">Origin story</option>
+      <option value="style">Architectural style</option>
+      <option value="alignMonth">Sun alignment month</option>
       <option value="none">None (A–Z)</option>
     </select>
   </div>
   <div class="chips" id="chips"></div>
   <button class="reset-btn" id="resetBtn">Reset filters</button>
+  <button class="reset-btn" id="exportBtn" title="Copy your visit statuses and notes to the clipboard">Export ledger</button>
+  <button class="reset-btn" id="importBtn" title="Paste a ledger export back in">Import</button>
 </div>
 
 <div class="layout">
@@ -194,6 +226,8 @@
   <b>On sourcing and confidence.</b> Coordinates are main-street or civic-core reference points for trip planning, not district boundaries — for neighborhood entries they point at the commercial strip rather than the neighborhood centroid. Founding histories are compiled from general historical knowledge; a handful of the more unusual claims were checked against public sources (Menlo Park's 1867 depot, the Hercules powder works, Niles' Essanay film era, and Santa Clara's 1964 downtown demolition). Treat exact years as approximate, and "Origin story" as the dominant driver among what were usually several overlapping causes.
   <br><br>
   <b>Timing notes are starting points, not gospel.</b> They reflect street orientation, known markets and events, and the character of each place — verify current market days and theater marquee hours before making a trip. A place's origin and its present-day verdict are separate questions: Hercules was a genuine company town but reads as "Invented" today because almost nothing of that history survives above ground.
+  <br><br>
+  <b>On the sun alignment dates.</b> Each street's bearing was measured from OpenStreetMap geometry within about 250 m of the anchor point, and the dates are the days the sun crosses the horizon along that line — computed for a flat horizon, so they ignore the Berkeley hills, Mt. Tamalpais, and every building on the block. Streets that bend too much for one bearing to mean anything are left unmeasured rather than guessed at. Treat a date as the evening to be standing there, then trust the "When to go" note about whether the light will actually arrive.
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -1335,6 +1369,7 @@ const RAW = [
 ];
 
 const DATA = RAW.map((r,i)=>({ id:i, ...r }));
+const BY_NAME = new Map(DATA.map(d=>[d.name, d]));
 
 const TYPE_META = {
   confirmed: { label:"Confirmed",  color:"#3F6B4A" },
@@ -1356,16 +1391,150 @@ const TYPE_ORDER = ["confirmed","complex","invented","diffuse","erased","none"];
 const REGION_ORDER = ["San Francisco","Peninsula","South Bay","East Bay \u2013 Alameda","East Bay \u2013 Contra Costa","North Bay \u2013 Marin","North Bay \u2013 Sonoma","North Bay \u2013 Napa","North Bay \u2013 Solano"];
 const ORIGIN_ORDER = ["Mission / Pueblo","Ranch crossroads","Boomtown","Ferry / port","Railroad depot","Agricultural shipping","County seat","Company town","Streetcar suburb","University town","Resort / wine country","Cultural / immigrant district","Country estate","Urban renewal / erased","Postwar planned suburb","Modern redevelopment"];
 
+const STYLE_ORDER = ["false-front wood","Italianate / iron-front Victorian","Queen Anne commercial","early-20th-century brick commercial","Mission / Spanish Colonial Revival","Art Deco / Streamline Moderne","mid-century commercial","postwar strip","New Urbanist pastiche"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const UNSET = "— not surveyed";
+
 let state = { query:"", groupBy:"type", activeTypes:new Set(TYPE_ORDER), activeId:null, openId:null };
 
-/* ---------- MAP ---------- */
-const map = L.map('map', { scrollWheelZoom:true }).setView([37.85,-122.35], 9);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
-}).addTo(map);
+/* ---------- SUN ALIGNMENT ----------
+   Given a street's bearing, the evenings each year when the setting sun runs
+   straight down it — the local "henge". Everything here is closed-form: no
+   library, no network, and it costs a couple of milliseconds for the whole list.
+
+   This is geometric alignment against a flat horizon. Hills, buildings and fog
+   all beat the arithmetic, so treat these as dates to plan around rather than
+   promises — the "When to go" note still knows things this doesn't. */
+const D2R = Math.PI/180, R2D = 180/Math.PI;
+const H0 = -0.833 * D2R;   /* horizon: atmospheric refraction + the sun's own radius */
+
+/* Solar declination for day-of-year n. Spencer's Fourier series, good to ~0.1°. */
+function declination(n){
+  const g = 2*Math.PI*(n-1)/365;
+  return 0.006918 - 0.399912*Math.cos(g) + 0.070257*Math.sin(g)
+       - 0.006758*Math.cos(2*g) + 0.000907*Math.sin(2*g)
+       - 0.002697*Math.cos(3*g) + 0.001480*Math.sin(3*g);
+}
+
+/* Compass bearing (clockwise from north) where the sun crosses the horizon. */
+function horizonAzimuth(n, latDeg){
+  const phi = latDeg*D2R, dec = declination(n);
+  let c = (Math.sin(dec) - Math.sin(H0)*Math.sin(phi)) / (Math.cos(H0)*Math.cos(phi));
+  c = Math.max(-1, Math.min(1, c));
+  const a = Math.acos(c)*R2D;
+  return { rise:a, set:360-a };
+}
+
+/* Days of the year when the horizon azimuth crosses `target`, plus the closest
+   approach — so a street that just misses can say by how much instead of
+   reporting nothing. */
+function alignmentDays(latDeg, target, which){
+  const f = n => horizonAzimuth(((n-1)%365)+1, latDeg)[which] - target;
+  const days = []; let closest = Infinity;
+  for(let n=1; n<=365; n++){
+    const a = f(n), b = f(n+1);
+    if(Math.abs(a) < closest) closest = Math.abs(a);
+    if(a === 0) days.push(n);
+    else if(a*b < 0) days.push(n + a/(a-b));
+  }
+  /* A crossing landing exactly on a sample point can be caught twice. */
+  const uniq = days.filter((d,i)=> i===0 || d - days[i-1] > 1);
+  return { days:uniq, closest:+closest.toFixed(1) };
+}
+
+function doyToDate(doy, year){
+  const d = new Date(year, 0, 1);
+  d.setDate(d.getDate() + Math.round(doy) - 1);
+  return d;
+}
+function fmtDay(doy){
+  const d = doyToDate(doy, 2001);   /* a common year, purely for month/day labelling */
+  return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+}
+
+/* A street is a line, not an arrow: `axis` is 0–179 and both ends matter. The
+   western end (axis+180) is the sunset candidate, the eastern end the sunrise. */
+function computeAlignment(d){
+  if(d.axis === undefined || d.axis === null) return null;
+  return {
+    sunset: alignmentDays(d.lat, (d.axis + 180) % 360, 'set'),
+    sunrise: alignmentDays(d.lat, d.axis, 'rise'),
+  };
+}
+
+/* ---------- VISIT STATUS ----------
+   Keyed by name rather than array index: entries get merged, added and
+   reordered, and a saved season of scouting shouldn't move with them. */
+const STATUS_KEY = 'downtown-ledger:v1';
+const STATUS_ORDER = ["unvisited","scouted","shot","revisit"];
+const STATUS_META = {
+  unvisited:{ label:"Unvisited", color:"transparent" },
+  scouted:  { label:"Scouted",   color:"#B8862E" },
+  shot:     { label:"Shot",      color:"#3F6B4A" },
+  revisit:  { label:"Revisit",   color:"#B65332" },
+};
+let STATUS = {};
+try { STATUS = JSON.parse(localStorage.getItem(STATUS_KEY)) || {}; } catch(e){ STATUS = {}; }
+
+function saveStatus(){
+  try { localStorage.setItem(STATUS_KEY, JSON.stringify(STATUS)); }
+  catch(e){ showNotice("Couldn't save — this browser is blocking storage. Export to keep your notes."); }
+}
+function statusOf(name){ return (STATUS[name] && STATUS[name].status) || "unvisited"; }
+function noteOf(name){ return (STATUS[name] && STATUS[name].note) || ""; }
+function writeStatus(name, patch){
+  const next = Object.assign({ status:"unvisited", note:"" }, STATUS[name], patch);
+  if(next.status === "unvisited" && !next.note) delete STATUS[name];
+  else STATUS[name] = next;
+  saveStatus();
+}
+
+/* ---------- DERIVED FIELDS ----------
+   Pairings only need authoring from one side; fill in the reverse here. A pair
+   that doesn't resolve is a typo in the data, so say so rather than swallow it. */
+DATA.forEach(d=>{
+  if(!d.pairs_with) return;
+  const other = BY_NAME.get(d.pairs_with);
+  if(!other){ console.warn(`pairs_with does not resolve: "${d.name}" -> "${d.pairs_with}"`); d.pairs_with = null; return; }
+  if(!other.pairs_with) other.pairs_with = d.name;
+});
+
+DATA.forEach(d=>{
+  d.align = computeAlignment(d);
+  /* Group-by key: the month of the next sunset alignment from today, so
+     "what lines up this month" is one selection rather than a calculation. */
+  d.alignMonth = "No alignment";
+  if(d.align && d.align.sunset.days.length){
+    const today = new Date();
+    const doy = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const upcoming = d.align.sunset.days.filter(x=>x >= doy);
+    const next = upcoming.length ? upcoming[0] : d.align.sunset.days[0];
+    d.alignMonth = MONTHS[doyToDate(next, 2001).getMonth()];
+  }
+});
+const MONTH_ORDER = MONTHS.concat("No alignment");
+const GROUP_ORDERS = { type:TYPE_ORDER, region:REGION_ORDER, origin:ORIGIN_ORDER, style:STYLE_ORDER, alignMonth:MONTH_ORDER };
+
+/* ---------- MAP ----------
+   Leaflet comes off a CDN, and this thing is meant to be used in places with no
+   signal. If the library doesn't arrive, the map is skipped and the ledger \u2014 the
+   list, the notes, the sun dates \u2014 carries on working. Losing the map is a
+   nuisance; losing the whole page standing on a pavement is not acceptable. */
+const hasMap = (typeof L !== 'undefined');
+const map = hasMap ? L.map('map', { scrollWheelZoom:true }).setView([37.85,-122.35], 9) : null;
+if(hasMap){
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
+  }).addTo(map);
+} else {
+  const el = document.getElementById('map');
+  el.style.cssText += "display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;background:var(--paper-alt);font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6;color:var(--ink-soft);";
+  el.textContent = "The map library didn't load. Everything else on this page still works.";
+}
 
 const markers = {};
-DATA.forEach(d=>{
+if(hasMap) DATA.forEach(d=>{
   const m = L.circleMarker([d.lat, d.lng], {
     radius:6, weight:1.5, color:"#1E2A24", fillColor:TYPE_META[d.type].color, fillOpacity:0.9,
   }).bindPopup(
@@ -1379,10 +1548,19 @@ DATA.forEach(d=>{
 });
 
 function refreshMapMarkers(){
+  if(!hasMap) return;
   DATA.forEach(d=>{
     const visible = state.activeTypes.has(d.type) && matchesQuery(d);
     if(visible){ if(!map.hasLayer(markers[d.id])) markers[d.id].addTo(map); }
     else { if(map.hasLayer(markers[d.id])) map.removeLayer(markers[d.id]); }
+    /* Fill still means verdict; the outline carries where you are with it, so a
+       half-finished route reads off the map at a glance. */
+    const st = statusOf(d.name);
+    markers[d.id].setStyle({
+      dashArray: st === 'shot' ? '2,3' : null,
+      weight: st === 'revisit' ? 3 : 1.5,
+      color: st === 'unvisited' ? "#1E2A24" : STATUS_META[st].color,
+    });
   });
 }
 
@@ -1392,8 +1570,7 @@ function selectFromMap(id){
   state.activeId = id;
   state.openId = id;
   const d = DATA[id];
-  map.panTo([d.lat, d.lng], { animate:true, duration:0.4 });
-  markers[id].openPopup();
+  if(hasMap){ map.panTo([d.lat, d.lng], { animate:true, duration:0.4 }); markers[id].openPopup(); }
   renderTable();
   scrollRowIntoView(id, true);
 }
@@ -1402,7 +1579,7 @@ function selectFromMap(id){
 function setActive(id){
   state.activeId = id;
   const d = DATA[id];
-  if(d){ map.flyTo([d.lat, d.lng], 12, { duration:0.6 }); markers[id].openPopup(); }
+  if(d && hasMap){ map.flyTo([d.lat, d.lng], 12, { duration:0.6 }); markers[id].openPopup(); }
   renderTable();
 }
 
@@ -1452,7 +1629,9 @@ function showNotice(msg){
 function matchesQuery(d){
   if(!state.query) return true;
   const q = state.query.toLowerCase();
-  return [d.name,d.region,d.history,d.shoot,d.origin,d.street,d.light].some(s=>s.toLowerCase().includes(q));
+  return [d.name,d.region,d.history,d.shoot,d.origin,d.street,d.light,
+          d.style,d.landmark,d.marquee,d.market,d.weather,d.pairs_with,noteOf(d.name)]
+    .some(s=>s && s.toLowerCase().includes(q));
 }
 function visibleData(){ return DATA.filter(d => state.activeTypes.has(d.type) && matchesQuery(d)); }
 
@@ -1482,14 +1661,57 @@ document.getElementById('groupBy').addEventListener('change', e=>{ state.groupBy
 document.getElementById('legend').innerHTML =
   `<div style="text-transform:uppercase;letter-spacing:.1em;color:#1E2A24;font-weight:600;margin-bottom:8px;">Verdict legend</div>` +
   TYPE_ORDER.map(t=>`<div class="legend-row"><span class="dot" style="background:${TYPE_META[t].color}"></span><b>${TYPE_META[t].label}</b> \u2014 ${TYPE_DESC[t]}</div>`).join('') +
-  `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--ink-soft);">Click a row to expand its history, subjects, and timing. Click a map pin to jump to it.</div>`;
+  `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--ink-soft);">Click a row to expand its history, subjects, timing, and sun alignment. Click a map pin to jump to it.</div>` +
+  `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">` +
+  `<div style="text-transform:uppercase;letter-spacing:.1em;color:#1E2A24;font-weight:600;margin-bottom:8px;">Visit status</div>` +
+  STATUS_ORDER.filter(s=>s!=='unvisited').map(s=>
+    `<div class="legend-row"><span class="dot" style="background:${STATUS_META[s].color}"></span><b>${STATUS_META[s].label}</b></div>`).join('') +
+  `<div style="color:var(--ink-soft);margin-top:6px;">Set it in any open row. Pins pick up the colour, and shot ones go dashed. Stored in this browser only — use <b>Export ledger</b> to move it.</div></div>`;
 
 /* ---------- TABLE ---------- */
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* The two sunset dates, or an honest account of why there aren't any. */
+function alignHtml(d){
+  if(!d.align) return `<p class="align-none">${UNSET}. The street's bearing hasn't been measured, so there's no date to give.</p>`;
+  const bits = [];
+  const set = d.align.sunset, rise = d.align.sunrise;
+  if(set.days.length) bits.push(`<div class="align-dates"><b>Sunset down the street</b><br>${set.days.map(fmtDay).join(' &nbsp;\u00b7&nbsp; ')}</div>`);
+  else if(set.closest < 2.5) bits.push(`<p class="align-none">Sunset misses by ${set.closest}\u00b0 at its closest \u2014 near enough to be worth a look.</p>`);
+  if(rise.days.length) bits.push(`<div class="align-dates" style="margin-top:6px;"><b>Sunrise down the street</b><br>${rise.days.map(fmtDay).join(' &nbsp;\u00b7&nbsp; ')}</div>`);
+  if(!bits.length) bits.push(`<p class="align-none">The sun never rises or sets along this bearing at ${d.lat.toFixed(1)}\u00b0N \u2014 cross light only.</p>`);
+  return bits.join('') + `<p class="align-none" style="margin-top:6px;font-size:11.5px;">Street bears ${d.axis}\u00b0, flat horizon.</p>`;
+}
+
+function factsHtml(d){
+  const f = [];
+  if(d.style)    f.push(`<span class="fact"><b>Style</b>${esc(d.style)}</span>`);
+  if(d.landmark) f.push(`<span class="fact"><b>Landmark</b>${esc(d.landmark)}</span>`);
+  if(d.marquee)  f.push(`<span class="fact"><b>Marquee</b>${esc(d.marquee)}</span>`);
+  if(d.market)   f.push(`<span class="fact"><b>Market</b>${esc(d.market)}</span>`);
+  if(d.weather)  f.push(`<span class="fact"><b>Season</b>${esc(d.weather)}</span>`);
+  if(d.pairs_with && BY_NAME.has(d.pairs_with)){
+    f.push(`<span class="fact"><b>Shoot the pair</b><a class="pair-link" data-pair="${esc(d.pairs_with)}">${esc(d.pairs_with)}</a></span>`);
+  }
+  return f.length ? `<div class="facts">${f.join('')}</div>` : '';
+}
+
+function statusHtml(d){
+  const cur = statusOf(d.name);
+  const btns = STATUS_ORDER.map(s=>
+    `<button class="st-btn${s===cur?' on':''}" data-name="${esc(d.name)}" data-id="${d.id}" data-status="${s}">`+
+    `<span class="dot" style="background:${STATUS_META[s].color};${s==='unvisited'?'border:1px solid var(--line);':''}"></span>${STATUS_META[s].label}</button>`
+  ).join('');
+  return `<div class="status-bar">${btns}</div>
+    <textarea class="st-note" data-name="${esc(d.name)}" placeholder="Field notes \u2014 what you shot, what to come back for\u2026">${esc(noteOf(d.name))}</textarea>`;
+}
+
 function rowHtml(d){
   const active = d.id === state.activeId ? ' active' : '';
   const open = d.id === state.openId;
+  const st = statusOf(d.name);
   return `<tr class="row${active}" data-id="${d.id}">
-    <td class="name">${d.name}<span class="street">${d.street}</span></td>
+    <td class="name"><span class="st-square ${st}" style="background:${STATUS_META[st].color}" title="${STATUS_META[st].label}"></span>${d.name}<span class="street">${d.street}</span></td>
     <td class="region">${d.region}</td>
     <td class="origin"><span class="tag">${d.origin}</span><span class="era">${d.era}</span></td>
     <td><span class="stamp" style="background:${TYPE_META[d.type].color}">${TYPE_META[d.type].label}</span></td>
@@ -1501,7 +1723,10 @@ function rowHtml(d){
         <div class="detail-block"><h4>Why it formed</h4><p>${d.history}</p></div>
         <div class="detail-block"><h4>What to look for</h4><p>${d.shoot}</p></div>
         <div class="detail-block"><h4>When to go</h4><p>${d.light}</p></div>
+        <div class="detail-block"><h4>Sun alignment</h4>${alignHtml(d)}</div>
       </div>
+      ${factsHtml(d)}
+      ${statusHtml(d)}
       <div class="detail-geo">${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</div>
     </td>
   </tr>`;
@@ -1515,10 +1740,14 @@ function renderTable(){
     rows.sort((a,b)=>a.name.localeCompare(b.name));
     html = rows.map(rowHtml).join('');
   } else {
-    const order = state.groupBy==="type" ? TYPE_ORDER : (state.groupBy==="region" ? REGION_ORDER : ORIGIN_ORDER);
-    order.forEach(g=>{
-      const gr = rows.filter(d=>d[state.groupBy]===g).sort((a,b)=>a.name.localeCompare(b.name));
+    const order = GROUP_ORDERS[state.groupBy] || [];
+    /* Anything without a value for this field still has to appear somewhere. */
+    const ungrouped = rows.filter(d=>!order.includes(d[state.groupBy]));
+    const groups = order.map(g=>[g, rows.filter(d=>d[state.groupBy]===g)]);
+    if(ungrouped.length) groups.push([UNSET, ungrouped]);
+    groups.forEach(([g, gr])=>{
       if(!gr.length) return;
+      gr = gr.slice().sort((a,b)=>a.name.localeCompare(b.name));
       const label = state.groupBy==="type" ? TYPE_META[g].label : g;
       html += `<tr class="group-header"><td colspan="5">${label}<span class="count">${gr.length} location${gr.length===1?'':'s'}</span></td></tr>`;
       html += gr.map(rowHtml).join('');
@@ -1537,6 +1766,77 @@ function renderTable(){
   });
 }
 
+/* Status controls live inside the open detail row. They're wired up once by
+   delegation and update the DOM in place — calling renderTable() here would
+   rebuild tbody and yank the cursor out of a half-typed note. */
+const tbodyEl = document.getElementById('tbody');
+
+tbodyEl.addEventListener('click', e=>{
+  const pair = e.target.closest('.pair-link');
+  if(pair){
+    e.stopPropagation();
+    const other = BY_NAME.get(pair.dataset.pair);
+    if(other) selectFromMap(other.id);
+    return;
+  }
+  const btn = e.target.closest('.st-btn');
+  if(!btn) return;
+  e.stopPropagation();
+  const { name, id, status } = btn.dataset;
+  writeStatus(name, { status });
+  btn.parentElement.querySelectorAll('.st-btn').forEach(b=>b.classList.toggle('on', b === btn));
+  const square = tbodyEl.querySelector(`tr.row[data-id="${id}"] .st-square`);
+  if(square){
+    square.className = `st-square ${status}`;
+    square.style.background = STATUS_META[status].color;
+    square.title = STATUS_META[status].label;
+  }
+  refreshMapMarkers();
+});
+
+const noteTimers = {};
+tbodyEl.addEventListener('input', e=>{
+  const ta = e.target.closest('.st-note');
+  if(!ta) return;
+  const name = ta.dataset.name;
+  clearTimeout(noteTimers[name]);
+  noteTimers[name] = setTimeout(()=>writeStatus(name, { note: ta.value }), 400);
+});
+/* A click in the textarea must not toggle the row shut underneath it. */
+tbodyEl.addEventListener('mousedown', e=>{ if(e.target.closest('.st-note')) e.stopPropagation(); });
+
+/* ---------- LEDGER EXPORT / IMPORT ----------
+   There's no server here, so the clipboard is how a phone and a desktop stay in
+   step — and how a season of notes survives a browser clearing its storage. */
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  const text = JSON.stringify(STATUS, null, 1);
+  const n = Object.keys(STATUS).length;
+  try {
+    await navigator.clipboard.writeText(text);
+    showNotice(n ? `Copied ${n} location${n===1?'':'s'} to the clipboard.` : "Nothing logged yet — copied an empty ledger.");
+  } catch(e){ window.prompt("Copy your ledger:", text); }
+});
+
+document.getElementById('importBtn').addEventListener('click', async ()=>{
+  let text = "";
+  try { text = await navigator.clipboard.readText(); } catch(e){}
+  if(!text) text = window.prompt("Paste a ledger export:") || "";
+  if(!text.trim()) return;
+  let incoming;
+  try { incoming = JSON.parse(text); }
+  catch(e){ return showNotice("That doesn't parse as a ledger export."); }
+  if(!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return showNotice("That doesn't look like a ledger export.");
+  let merged = 0, unknown = 0;
+  for(const [name, v] of Object.entries(incoming)){
+    if(!v || typeof v !== 'object') continue;
+    if(!BY_NAME.has(name)){ unknown++; continue; }
+    writeStatus(name, { status: STATUS_ORDER.includes(v.status) ? v.status : "unvisited", note: typeof v.note === 'string' ? v.note : "" });
+    merged++;
+  }
+  renderTable(); refreshMapMarkers();
+  showNotice(`Imported ${merged} location${merged===1?'':'s'}${unknown ? `, skipped ${unknown} unknown` : ''}.`);
+});
+
 function updateStats(){
   const rows = visibleData();
   document.getElementById('statTotal').textContent = rows.length;
@@ -1551,10 +1851,18 @@ legendToggle.addEventListener('click', ()=>{
   legendToggle.textContent = shown ? 'Hide legend' : 'Show legend';
 });
 
-window.addEventListener('resize', ()=>{ map.invalidateSize(); });
+window.addEventListener('resize', ()=>{ if(hasMap) map.invalidateSize(); });
 
 renderTable(); refreshMapMarkers(); updateStats();
-setTimeout(()=>map.invalidateSize(), 200);
+if(hasMap) setTimeout(()=>map.invalidateSize(), 200);
+
+/* Offline shell. Needs a real origin, so this quietly does nothing when the
+   file is opened straight off disk — which is exactly what you want locally. */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>

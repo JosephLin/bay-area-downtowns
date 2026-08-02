@@ -4,6 +4,9 @@ A working field survey of main streets across the nine-county Bay Area, kept for
 photography project. One self-contained HTML file: no build step, no dependencies to
 install, no server. Open it and it works.
 
+(There is a `tools/` directory for measuring street bearings and testing the page, but
+nothing there is required to use or edit the ledger — see `tools/README.md`.)
+
 The project starts in the South Bay — Campbell, Saratoga, Los Gatos, the San Jose
 neighbourhoods — and works outward. The ledger is ahead of the camera on purpose: it
 is a list of places to go, in the order they are worth going.
@@ -82,8 +85,8 @@ Published to GitHub Pages, the ledger is meant to be added to a phone's home scr
 ## Working on it
 
 `index.html` is the whole application. Open it in a browser; that is the full test loop.
-See `CLAUDE.md` for the data model, the scripts that generated the bearings, and a list
-of things that look like bugs and aren't.
+See `CLAUDE.md` for the data model and a list of things that look like bugs and aren't,
+and `tools/README.md` for measuring bearings on new entries and running the tests.
 
 ## On sourcing
 

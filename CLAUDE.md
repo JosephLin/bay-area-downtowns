@@ -61,6 +61,10 @@ worse.
 
 ## How the bearings were produced
 
+The scripts live in `tools/`, with `tools/README.md` covering how to run them. Adding a
+location is `node tools/measure-bearings.js` then `node tools/apply-bearings.js --write`;
+the latter touches only `axis` and is a no-op when nothing changed.
+
 `axis` was measured, not estimated. For each entry the main street is parsed out of the
 `street` field, matched against OpenStreetMap ways by name near the anchor, and the
 segment directions within ~300 m are averaged with the angles doubled — so that 179° and

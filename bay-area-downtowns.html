@@ -198,12 +198,24 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-/* One object per location. Fields are optional unless noted; a missing field renders as "—".
-   name/region/type/lat/lng/origin/era/history/shoot/street/light are required. */
+/* One object per location.
+   Required: name, region, type, lat, lng, origin, era, history, shoot, street, light.
+   Optional, and rendered as "—" when absent:
+     style       architectural vocabulary, from STYLE_ORDER below
+     axis        compass bearing of the main street as a line, 0–179°, measured from
+                 OpenStreetMap geometry within ~250 m of the anchor. Absent where the
+                 street bends too much for a single bearing to mean anything.
+     weather     "coastal fog" | "inland heat" | "mixed" — picks the season, not the hour
+     landmark    the one object that makes the picture
+     marquee     surviving theatre, for the dusk/blue-hour series
+     market      farmers-market day; verify before a trip, these move
+     pairs_with  another entry worth shooting as a diptych; symmetry is filled in at load
+*/
 const RAW = [
 {
   name:"Union Square & Financial District", region:"San Francisco", type:"complex", lat:37.7879, lng:-122.4074,
-  origin:"Boomtown", era:"1850s–1900s",
+  origin:"Boomtown", era:"1850s–1900s", style:"Art Deco / Streamline Moderne", axis:170.8, weather:"mixed",
+  landmark:"The Powell St cable-car turnaround",
   history:"Exploded from a ~200-person pueblo to a 25,000-person boomtown within two years of the 1848 Gold Rush; rebuilt in masonry and steel after the 1906 earthquake and fire.",
   shoot:"Post-1906 Beaux-Arts towers, cable-car turnarounds, narrow Financial District canyons.",
   street:"Powell St & Post St",
@@ -211,7 +223,8 @@ const RAW = [
 },
 {
   name:"North Beach", region:"San Francisco", type:"complex", lat:37.8065, lng:-122.4103,
-  origin:"Cultural / immigrant district", era:"1880s–1950s",
+  origin:"Cultural / immigrant district", era:"1880s–1950s", style:"early-20th-century brick commercial", weather:"mixed",
+  landmark:"Coit Tower",
   history:"Settled by Italian fishing families in the late 1800s, then became the Beat Generation's home base around City Lights Books in the 1950s.",
   shoot:"Italian delis and cafes, Beat-era bars, Coit Tower, Washington Square church facade.",
   street:"Columbus Ave & Grant Ave",
@@ -219,7 +232,8 @@ const RAW = [
 },
 {
   name:"Chinatown", region:"San Francisco", type:"complex", lat:37.7941, lng:-122.4078,
-  origin:"Cultural / immigrant district", era:"1850s–present",
+  origin:"Cultural / immigrant district", era:"1850s–present", style:"early-20th-century brick commercial", axis:170.9, weather:"mixed",
+  landmark:"Dragon's Gate at Grant & Bush",
   history:"Formed by Chinese immigrants arriving during the Gold Rush and railroad-construction era; rebuilt after 1906 in a deliberately ornate style to keep the neighborhood (and tourism) alive.",
   shoot:"Dragon's Gate, pagoda rooflines, red lanterns, narrow alleys like Ross Alley.",
   street:"Grant Ave & Washington St",
@@ -227,7 +241,8 @@ const RAW = [
 },
 {
   name:"Hayes Valley", region:"San Francisco", type:"complex", lat:37.7759, lng:-122.4245,
-  origin:"Modern redevelopment", era:"1990s–2000s",
+  origin:"Modern redevelopment", era:"1990s–2000s", style:"Queen Anne commercial", axis:80.9, weather:"mixed",
+  landmark:"Patricia's Green, built on the old freeway footprint",
   history:"A Victorian neighborhood cut off by an elevated freeway for decades; the 1989 earthquake damaged the freeway enough that it was torn down, reconnecting and reviving the area.",
   shoot:"Restored Victorians, Patricia's Green park built on the old freeway footprint.",
   street:"Hayes St & Octavia Blvd",
@@ -235,7 +250,8 @@ const RAW = [
 },
 {
   name:"The Castro", region:"San Francisco", type:"complex", lat:37.7609, lng:-122.435,
-  origin:"Streetcar suburb", era:"1880s / 1970s",
+  origin:"Streetcar suburb", era:"1880s / 1970s", style:"Queen Anne commercial", axis:175.6, weather:"mixed",
+  landmark:"The rainbow crosswalks at 18th", marquee:"Castro Theatre",
   history:"Built as a working-class streetcar suburb in the 1880s–90s; became the center of American LGBTQ+ culture and activism in the 1970s under Harvey Milk.",
   shoot:"Castro Theatre marquee, rainbow crosswalks and flags, Victorian storefronts.",
   street:"Castro St & 18th St",
@@ -243,7 +259,8 @@ const RAW = [
 },
 {
   name:"Valencia St. (Mission)", region:"San Francisco", type:"complex", lat:37.7599, lng:-122.4212,
-  origin:"Streetcar suburb", era:"1900s–present",
+  origin:"Streetcar suburb", era:"1900s–present", style:"Queen Anne commercial", axis:175.6, weather:"mixed",
+  landmark:"The murals of Balmy and Clarion Alleys",
   history:"The Mission is SF's oldest developed neighborhood, growing up around Mission Dolores (1776); Valencia St. became a streetcar-era shopping strip, later reshaped by Latino immigration and tech-era change.",
   shoot:"Wall murals on Balmy and Clarion Alleys, mix of old storefronts and new facades.",
   street:"Valencia St & 18th St",
@@ -251,7 +268,8 @@ const RAW = [
 },
 {
   name:"Noe Valley", region:"San Francisco", type:"complex", lat:37.7502, lng:-122.4337,
-  origin:"Streetcar suburb", era:"1880s–1900s",
+  origin:"Streetcar suburb", era:"1880s–1900s", style:"Queen Anne commercial", axis:85.6, weather:"mixed",
+  market:"Sat",
   history:"Developed once cable car lines reached the valley in the 1880s, offering working families an escape from the foggier, denser city core.",
   shoot:"24th St. Victorians, small-town stroller-friendly strip.",
   street:"24th St & Castro St",
@@ -259,7 +277,8 @@ const RAW = [
 },
 {
   name:"Fillmore", region:"San Francisco", type:"complex", lat:37.7849, lng:-122.4327,
-  origin:"Cultural / immigrant district", era:"1940s–1950s",
+  origin:"Cultural / immigrant district", era:"1940s–1950s", style:"Queen Anne commercial", axis:170.9, weather:"mixed",
+  landmark:"The Geary underpass — the visible scar of urban renewal",
   history:"Became known as the 'Harlem of the West' during the WWII shipyard boom as Black families moved in, before 1960s urban-renewal demolition scattered much of the community.",
   shoot:"Jazz Heritage Center murals, surviving Victorian storefronts, historic theater marquees.",
   street:"Fillmore St & Geary Blvd",
@@ -267,7 +286,7 @@ const RAW = [
 },
 {
   name:"Cole Valley / Upper Haight", region:"San Francisco", type:"complex", lat:37.7692, lng:-122.4481,
-  origin:"Streetcar suburb", era:"1890s / 1967",
+  origin:"Streetcar suburb", era:"1890s / 1967", style:"Queen Anne commercial", axis:80.8, weather:"coastal fog",
   history:"Grew as a streetcar suburb near Golden Gate Park, then became ground zero for 1967's Summer of Love.",
   shoot:"Haight St. countercultural shopfronts and murals, nearby Victorian rows.",
   street:"Haight St & Ashbury St",
@@ -275,7 +294,7 @@ const RAW = [
 },
 {
   name:"Union St. / Cow Hollow", region:"San Francisco", type:"complex", lat:37.7976, lng:-122.4368,
-  origin:"Modern redevelopment", era:"1850s–70s / 1960s",
+  origin:"Modern redevelopment", era:"1850s–70s / 1960s", style:"Queen Anne commercial", axis:80.9, weather:"mixed",
   history:"Named for cattle-grazing land and dairies that operated here in the 1850s–70s, later gentrified into an upscale shopping strip a century on.",
   shoot:"Small-scale Victorian cottages converted into boutiques.",
   street:"Union St & Fillmore St",
@@ -283,7 +302,8 @@ const RAW = [
 },
 {
   name:"Japantown", region:"San Francisco", type:"complex", lat:37.7855, lng:-122.4304,
-  origin:"Cultural / immigrant district", era:"1900s–1960s",
+  origin:"Cultural / immigrant district", era:"1900s–1960s", style:"mid-century commercial", axis:80.9, weather:"mixed",
+  landmark:"The Peace Pagoda",
   history:"Japanese immigrants settled here after the 1906 earthquake displaced them from other neighborhoods; the community was forcibly removed to WWII incarceration camps, then rebuilt the district afterward.",
   shoot:"Peace Pagoda and Peace Plaza, mid-century Japantown mall architecture.",
   street:"Post St & Buchanan St",
@@ -291,7 +311,7 @@ const RAW = [
 },
 {
   name:"Half Moon Bay", region:"Peninsula", type:"confirmed", lat:37.4636, lng:-122.4286,
-  origin:"Agricultural shipping", era:"1840s–1900s",
+  origin:"Agricultural shipping", era:"1840s–1900s", style:"false-front wood", axis:6.3, weather:"coastal fog",
   history:"Settled by Mexican land-grant ranchers, then Portuguese and Italian farming families who shipped produce out through a small coastal landing.",
   shoot:"Wooden false-front Main St., coastal fog light, old farm buildings.",
   street:"Main St & Kelly Ave",
@@ -299,7 +319,8 @@ const RAW = [
 },
 {
   name:"Burlingame", region:"Peninsula", type:"confirmed", lat:37.5779, lng:-122.3453,
-  origin:"Railroad depot", era:"1860s–1900s",
+  origin:"Railroad depot", era:"1860s–1900s", style:"Mission / Spanish Colonial Revival", axis:48.2, weather:"mixed",
+  landmark:"The Spanish Revival depot",
   history:"Grew around an 1860s Southern Pacific stop, later platted as a country retreat for wealthy San Franciscans.",
   shoot:"Spanish Revival depot area, Burlingame Ave. storefronts.",
   street:"Burlingame Ave & Primrose Rd",
@@ -307,7 +328,8 @@ const RAW = [
 },
 {
   name:"Redwood City", region:"Peninsula", type:"confirmed", lat:37.4852, lng:-122.2364,
-  origin:"County seat", era:"1850s",
+  origin:"County seat", era:"1850s", style:"Art Deco / Streamline Moderne", axis:86.2, weather:"mixed",
+  landmark:"The courthouse dome on Courthouse Square", marquee:"Fox Theatre",
   history:"Founded as a lumber-shipping port at the head of Redwood Creek, then became San Mateo County's seat in 1856.",
   shoot:"Historic courthouse dome, restored 1920s theater marquee on Broadway.",
   street:"Broadway & Hamilton St",
@@ -315,7 +337,7 @@ const RAW = [
 },
 {
   name:"San Carlos", region:"Peninsula", type:"confirmed", lat:37.5072, lng:-122.2605,
-  origin:"Railroad depot", era:"1880s–1900s",
+  origin:"Railroad depot", era:"1880s–1900s", style:"early-20th-century brick commercial", axis:136.8, weather:"mixed",
   history:"Grew around a Southern Pacific stop named for the mission; developed as a residential suburb in the early 20th century.",
   shoot:"Laurel St. storefronts, depot-adjacent brick buildings.",
   street:"Laurel St & San Carlos Ave",
@@ -323,7 +345,8 @@ const RAW = [
 },
 {
   name:"Menlo Park", region:"Peninsula", type:"confirmed", lat:37.453, lng:-122.1817,
-  origin:"Railroad depot", era:"1863–67",
+  origin:"Railroad depot", era:"1863–67", style:"Queen Anne commercial", axis:32.9, weather:"mixed",
+  landmark:"The 1867 depot — oldest standing station in California",
   history:"Rail service reached Menlo Park in 1863 and the depot (built 1867) is the oldest railroad passenger station still standing in California, later dressed up in Victorian trim to impress Stanford visitors.",
   shoot:"The 1867 depot itself — oldest standing train station in the state — plus Santa Cruz Ave. storefronts.",
   street:"Santa Cruz Ave & Curtis St / the depot at Merrill St",
@@ -331,7 +354,7 @@ const RAW = [
 },
 {
   name:"San Mateo", region:"Peninsula", type:"confirmed", lat:37.563, lng:-122.3255,
-  origin:"Railroad depot", era:"1860s",
+  origin:"Railroad depot", era:"1860s", style:"early-20th-century brick commercial", axis:139.2, weather:"mixed",
   history:"Grew from a Southern Pacific stop into San Mateo County's largest early town.",
   shoot:"B St./3rd Ave. brick storefronts, Caltrain corridor.",
   street:"B St & 3rd Ave",
@@ -339,7 +362,8 @@ const RAW = [
 },
 {
   name:"South San Francisco", region:"Peninsula", type:"confirmed", lat:37.6547, lng:-122.4077,
-  origin:"Company town", era:"1890s–1900s",
+  origin:"Company town", era:"1890s–1900s", style:"early-20th-century brick commercial", weather:"coastal fog",
+  landmark:"The hillside \"South San Francisco The Industrial City\" sign",
   history:"Founded around meatpacking and steel plants by industrialist Gustavus Swift; the hillside 'South San Francisco The Industrial City' sign still overlooks downtown.",
   shoot:"The hillside sign, older industrial-adjacent brick buildings on Grand Ave.",
   street:"Grand Ave & Linden Ave",
@@ -347,7 +371,7 @@ const RAW = [
 },
 {
   name:"San Bruno", region:"Peninsula", type:"confirmed", lat:37.6305, lng:-122.4111,
-  origin:"Railroad depot", era:"1900s",
+  origin:"Railroad depot", era:"1900s", style:"early-20th-century brick commercial", weather:"coastal fog",
   history:"Developed later than its neighbors, growing around the rail line and later Tanforan Racetrack (now a shopping center).",
   shoot:"Modest early-20th-century storefronts on San Mateo Ave.",
   street:"San Mateo Ave & Jenevein Ave",
@@ -355,7 +379,7 @@ const RAW = [
 },
 {
   name:"Millbrae", region:"Peninsula", type:"confirmed", lat:37.5985, lng:-122.3872,
-  origin:"Railroad depot", era:"1860s–2000s",
+  origin:"Railroad depot", era:"1860s–2000s", style:"postwar strip", weather:"mixed",
   history:"Named for landowner Darius Ogden Mills' estate; grew slowly around the rail line until BART arrived in the 2000s.",
   shoot:"Small transit-adjacent core; little historic fabric left.",
   street:"Broadway & La Cruz Ave",
@@ -363,7 +387,7 @@ const RAW = [
 },
 {
   name:"Belmont", region:"Peninsula", type:"confirmed", lat:37.5202, lng:-122.2758,
-  origin:"Country estate", era:"1850s–1900s",
+  origin:"Country estate", era:"1850s–1900s", style:"postwar strip", axis:39.3, weather:"mixed",
   history:"Grew around wealthy 19th-century country estates (including a former governor's mansion) before suburbanizing.",
   shoot:"El Camino Real corridor; limited historic core.",
   street:"Ralston Ave & El Camino Real",
@@ -371,15 +395,17 @@ const RAW = [
 },
 {
   name:"Daly City (Top of the Hill)", region:"Peninsula", type:"diffuse", lat:37.7049, lng:-122.4623,
-  origin:"Postwar planned suburb", era:"1900s / 1940s–50s",
+  origin:"Postwar planned suburb", era:"1900s / 1940s–50s", style:"postwar strip", weather:"coastal fog",
+  landmark:"Doelger tract housing stepping down the hillsides",
   history:"Founded after 1906 earthquake refugees moved south of SF; developer Henry Doelger built much of it as mass tract housing after WWII. The Mission St./John Daly Blvd. junction — Top of the Hill — is the closest thing the city has to a center, a commercial crossroads rather than a planned downtown.",
   shoot:"Fog rolling over the ridge, Filipino-American businesses, endless Doelger tract housing stepping down the hillsides.",
   street:"Mission St & John Daly Blvd",
   light:"Fog is the subject — early morning or evening when it pours over the ridge.",
 },
 {
-  name:"Foster City", region:"Peninsula", type:"none", lat:37.5585, lng:-122.2711,
-  origin:"Postwar planned suburb", era:"1960s",
+  name:"Foster City", region:"Peninsula", type:"none", lat:37.5458, lng:-122.2723,
+  origin:"Postwar planned suburb", era:"1960s", style:"mid-century commercial", weather:"mixed",
+  landmark:"The lagoon canals",
   history:"Built almost entirely from scratch by developer T. Jack Foster on filled and diked salt marsh, with a lagoon system designed into the plan.",
   shoot:"Lagoon canals, uniformly 1960s–70s architecture — a study in planned-community design.",
   street:"Edgewater Blvd & Beach Park Blvd",
@@ -387,7 +413,7 @@ const RAW = [
 },
 {
   name:"Atherton", region:"Peninsula", type:"none", lat:37.4613, lng:-122.1977,
-  origin:"Country estate", era:"1860s–present",
+  origin:"Country estate", era:"1860s–present", weather:"mixed",
   history:"Founded by financier Faxon Atherton as a country estate for SF's wealthy; has stayed zoned residential-only ever since.",
   shoot:"Gated estates glimpsed from the road; no real commercial subject matter.",
   street:"Fair Oaks Ln & Middlefield Rd",
@@ -395,7 +421,8 @@ const RAW = [
 },
 {
   name:"Portola Valley", region:"Peninsula", type:"none", lat:37.3838, lng:-122.2352,
-  origin:"Ranch crossroads", era:"1850s–1960s",
+  origin:"Ranch crossroads", era:"1850s–1960s", weather:"mixed",
+  landmark:"The Alpine Inn, an 1850s roadhouse",
   history:"Remained ranchland and orchards until incorporating in 1964 specifically to control development and preserve its rural character.",
   shoot:"Oak-studded hills, historic Alpine Inn nearby, very little built density.",
   street:"Portola Rd & Alpine Rd",
@@ -403,7 +430,8 @@ const RAW = [
 },
 {
   name:"Woodside", region:"Peninsula", type:"none", lat:37.4302, lng:-122.253,
-  origin:"Ranch crossroads", era:"1850s",
+  origin:"Ranch crossroads", era:"1850s", style:"false-front wood", weather:"mixed",
+  landmark:"The Roberts Market crossroads",
   history:"Began as a logging camp supplying redwood lumber to build San Francisco, later became horse country for wealthy estates.",
   shoot:"A handful of 1880s wood-frame buildings at the crossroads.",
   street:"Woodside Rd & Canada Rd",
@@ -411,7 +439,7 @@ const RAW = [
 },
 {
   name:"East Palo Alto", region:"Peninsula", type:"none", lat:37.4688, lng:-122.1411,
-  origin:"Postwar planned suburb", era:"1920s–1950s",
+  origin:"Postwar planned suburb", era:"1920s–1950s", style:"postwar strip", weather:"mixed",
   history:"Developed later than its Peninsula neighbors, largely as working-class agricultural and postwar housing, historically disconnected from Palo Alto proper by the Bayshore Freeway.",
   shoot:"Mix of postwar tract housing and newer infill; limited historic core.",
   street:"University Ave & Bay Rd",
@@ -419,7 +447,8 @@ const RAW = [
 },
 {
   name:"Pacifica", region:"Peninsula", type:"diffuse", lat:37.6138, lng:-122.4869,
-  origin:"Postwar planned suburb", era:"1850s / 1950s",
+  origin:"Postwar planned suburb", era:"1850s / 1950s", weather:"coastal fog",
+  landmark:"The Pacifica Municipal Pier",
   history:"Formed in 1957 by merging several small coastal settlements (Rockaway Beach, Sharp Park, Linda Mar); mostly built out after WWII.",
   shoot:"Coastal bluffs and fog rather than historic storefronts.",
   street:"Palmetto Ave, Sharp Park",
@@ -427,7 +456,8 @@ const RAW = [
 },
 {
   name:"Downtown San Jose", region:"South Bay", type:"complex", lat:37.3336697, lng:-121.8906975,
-  origin:"Mission / Pueblo", era:"1777",
+  origin:"Mission / Pueblo", era:"1777", style:"Art Deco / Streamline Moderne", axis:59.2, weather:"mixed",
+  landmark:"Plaza de César Chávez, on the original 1777 pueblo plaza",
   history:"El Pueblo de San Jose de Guadalupe, founded in 1777, was the first civilian settlement (not a mission or presidio) in Spanish California.",
   shoot:"Surviving 19th-century brick amid the modern skyline; Plaza de Cesar Chavez sits on the original pueblo plaza.",
   street:"Santa Clara St & 1st St",
@@ -435,7 +465,7 @@ const RAW = [
 },
 {
   name:"Willow Glen (San Jose)", region:"South Bay", type:"complex", lat:37.301, lng:-121.8945,
-  origin:"Streetcar suburb", era:"1900s–1920s",
+  origin:"Streetcar suburb", era:"1900s–1920s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"Grew as an orchard town connected to San Jose by an early streetcar line, annexed into the city in 1936.",
   shoot:"Small-town Lincoln Ave. storefronts, 1920s bungalow-lined side streets.",
   street:"Lincoln Ave & Willow St",
@@ -443,7 +473,8 @@ const RAW = [
 },
 {
   name:"Japantown (San Jose)", region:"South Bay", type:"complex", lat:37.3494618, lng:-121.8939705,
-  origin:"Cultural / immigrant district", era:"1890s–1900s",
+  origin:"Cultural / immigrant district", era:"1890s–1900s", style:"early-20th-century brick commercial", axis:59, weather:"mixed",
+  landmark:"The Buddhist temple on 5th St", market:"Sun",
   history:"One of only three surviving Japantowns in the US, formed by Issei immigrants working in agriculture; survived because many residents were able to keep property through a sympathetic caretaker during WWII incarceration.",
   shoot:"Original early-1900s commercial buildings, Buddhist temple architecture.",
   street:"Jackson St & 5th St",
@@ -451,7 +482,8 @@ const RAW = [
 },
 {
   name:"Downtown Santa Clara", region:"South Bay", type:"erased", lat:37.3485898, lng:-121.9479177,
-  origin:"Urban renewal / erased", era:"1777 → razed 1964",
+  origin:"Urban renewal / erased", era:"1777 → razed 1964", style:"Art Deco / Streamline Moderne", axis:65.9, weather:"mixed",
+  landmark:"The metal archway with its stopped clock", pairs_with:"Downtown Campbell",
   history:"Grew around Mission Santa Clara de Asis (1777) into a walkable Victorian downtown on Franklin and Main Streets — then in 1964 the city demolished roughly eight blocks of it under federal urban renewal, planning a futuristic high-rise center that was never built. Franklin Square and parking lots stand there now; a citizen group, Reclaiming Our Downtown, has been pushing a rebuild.",
   shoot:"The most interesting subject on this whole list: a downtown that was erased. Look for the surviving 1930s Post Office, the metal archway with its stopped clock, the dry Franklin Plaza fountain, the commemorative marker, and the sheer acreage of parking where the grid used to be.",
   street:"Franklin St & Monroe St",
@@ -459,7 +491,8 @@ const RAW = [
 },
 {
   name:"Downtown Sunnyvale", region:"South Bay", type:"confirmed", lat:37.36883, lng:-122.0363496,
-  origin:"Railroad depot", era:"1860s–1900s",
+  origin:"Railroad depot", era:"1860s–1900s", style:"early-20th-century brick commercial", axis:17.4, weather:"mixed",
+  landmark:"Murphy Ave's car-free, string-lit block",
   history:"Grew around a Southern Pacific stop and became a major fruit-canning center in the early 1900s.",
   shoot:"Murphy Ave. historic depot-district buildings; look for old cannery-adjacent brick.",
   street:"Murphy Ave & Washington Ave",
@@ -467,7 +500,8 @@ const RAW = [
 },
 {
   name:"Downtown Mountain View", region:"South Bay", type:"confirmed", lat:37.3883461, lng:-122.0823743,
-  origin:"Railroad depot", era:"1860s–70s",
+  origin:"Railroad depot", era:"1860s–70s", style:"early-20th-century brick commercial", axis:25.8, weather:"mixed",
+  landmark:"The Caltrain depot at the head of Castro St",
   history:"Founded when the railroad bypassed the older settlement at Whisman, pulling the town center to the new depot on Castro St.",
   shoot:"Castro St. brick storefronts running straight at the old depot site.",
   street:"Castro St & Villa St",
@@ -475,7 +509,8 @@ const RAW = [
 },
 {
   name:"Main Street Cupertino", region:"South Bay", type:"invented", lat:37.3236873, lng:-122.010023,
-  origin:"Modern redevelopment", era:"1950s–2010s",
+  origin:"Modern redevelopment", era:"1950s–2010s", style:"New Urbanist pastiche", weather:"mixed",
+  pairs_with:"Downtown Los Gatos",
   history:"Historically an orchard and vineyard crossroads that never had a dense civic core; 'Main Street Cupertino' is a 2010s mixed-use development built to manufacture one.",
   shoot:"New-build architecture — worth shooting as a contrast to genuinely historic Main Streets.",
   street:"Main St & Stevens Creek Blvd",
@@ -483,15 +518,17 @@ const RAW = [
 },
 {
   name:"Downtown Campbell", region:"South Bay", type:"confirmed", lat:37.2898886, lng:-121.9501551,
-  origin:"Railroad depot", era:"1880s",
+  origin:"Railroad depot", era:"1880s", style:"early-20th-century brick commercial", axis:89.7, weather:"mixed",
+  landmark:"The old water tower", market:"Sun",
   history:"Founded by rancher Benjamin Campbell around a rail depot and grew as a fruit-packing and cannery hub.",
   shoot:"Restored depot building, Campbell Ave. brick storefronts, old water tower.",
   street:"Campbell Ave & 1st St",
   light:"Sunday morning farmers market, or early before setup for clean empty-street shots.",
 },
 {
-  name:"Downtown Los Gatos", region:"South Bay", type:"confirmed", lat:37.2358078, lng:-121.9623751,
-  origin:"Railroad depot", era:"1850s–70s",
+  name:"Downtown Los Gatos", region:"South Bay", type:"confirmed", lat:37.2226, lng:-121.9839,
+  origin:"Railroad depot", era:"1850s–70s", style:"Queen Anne commercial", axis:24.2, weather:"mixed",
+  landmark:"Creekside mill remnants",
   history:"Grew around a lumber and flour mill at the mouth of the canyon, then a South Pacific Coast Railroad stop.",
   shoot:"N. Santa Cruz Ave. Victorian-era storefronts, creekside mill remnants.",
   street:"N Santa Cruz Ave & Main St",
@@ -499,7 +536,7 @@ const RAW = [
 },
 {
   name:"Saratoga Village", region:"South Bay", type:"confirmed", lat:37.2581482, lng:-122.0332857,
-  origin:"Resort / wine country", era:"1850s",
+  origin:"Resort / wine country", era:"1850s", style:"false-front wood", weather:"mixed",
   history:"Founded as a lumber and paper-mill town, later reinvented as a genteel resort (its name borrowed from Saratoga Springs, NY, for mineral springs nearby).",
   shoot:"Small-scale wood storefronts, creekside setting.",
   street:"Big Basin Way & 4th St",
@@ -507,7 +544,7 @@ const RAW = [
 },
 {
   name:"Downtown Los Altos", region:"South Bay", type:"confirmed", lat:37.3813639, lng:-122.1142578,
-  origin:"Railroad depot", era:"1900s",
+  origin:"Railroad depot", era:"1900s", style:"early-20th-century brick commercial", axis:27.2, weather:"mixed",
   history:"Platted in 1907 by the Los Altos Land Company as an orchard-country residential town centered on a new depot.",
   shoot:"State St. small-scale early-1900s storefronts.",
   street:"Main St & State St",
@@ -515,7 +552,8 @@ const RAW = [
 },
 {
   name:"Downtown Morgan Hill", region:"South Bay", type:"confirmed", lat:37.1305012, lng:-121.6543901,
-  origin:"Railroad depot", era:"1890s",
+  origin:"Railroad depot", era:"1890s", style:"early-20th-century brick commercial", axis:145.2, weather:"inland heat",
+  landmark:"The murals on the side walls",
   history:"Named for a local rancher, grew around a Southern Pacific depot serving surrounding orchards and ranches.",
   shoot:"Monterey Rd. storefronts, small-town South County feel.",
   street:"Monterey Rd & 3rd St",
@@ -523,7 +561,7 @@ const RAW = [
 },
 {
   name:"Downtown Gilroy", region:"South Bay", type:"confirmed", lat:37.0084074, lng:-121.5693956,
-  origin:"Railroad depot", era:"1860s–70s",
+  origin:"Railroad depot", era:"1860s–70s", style:"Queen Anne commercial", axis:160.1, weather:"inland heat",
   history:"One of the oldest South Bay towns, grew around cattle ranching and then a Southern Pacific depot; later became famous for garlic farming.",
   shoot:"Monterey St. Victorian-era storefronts, antique shops.",
   street:"Monterey St & 6th St",
@@ -531,7 +569,8 @@ const RAW = [
 },
 {
   name:"Milpitas 'Crossroads'", region:"South Bay", type:"diffuse", lat:37.4283604, lng:-121.9062876,
-  origin:"Postwar planned suburb", era:"1950s–60s / 2020s",
+  origin:"Postwar planned suburb", era:"1950s–60s / 2020s", style:"postwar strip", axis:167.8, weather:"mixed",
+  landmark:"Redevelopment signage against the vacant lots",
   history:"Grew almost entirely postwar around heavy industry (a Ford assembly plant, later semiconductor manufacturing); never developed a historic walkable core, and the city has spent over a decade trying to manufacture a 'Midtown' around the BART station.",
   shoot:"Little historic material — worth documenting as a case study in planned-but-unbuilt downtown redevelopment.",
   street:"S Main St & Serra Way",
@@ -539,7 +578,8 @@ const RAW = [
 },
 {
   name:"Downtown Palo Alto", region:"South Bay", type:"confirmed", lat:37.4507403, lng:-122.1568439,
-  origin:"University town", era:"1888–94",
+  origin:"University town", era:"1888–94", style:"Mission / Spanish Colonial Revival", axis:38.2, weather:"mixed",
+  landmark:"The Ramona St Spanish Revival block", marquee:"Stanford Theatre",
   history:"Founded by Leland Stanford as a town to serve Stanford University (which opened in 1891), deliberately located south of Menlo Park's existing depot.",
   shoot:"University Ave. brick storefronts, Stanford Theatre marquee.",
   street:"University Ave & Ramona St",
@@ -547,7 +587,8 @@ const RAW = [
 },
 {
   name:"Alameda (Park St. & Webster St.)", region:"East Bay – Alameda", type:"confirmed", lat:37.7652, lng:-122.2416,
-  origin:"Ferry / port", era:"1850s–1900s",
+  origin:"Ferry / port", era:"1850s–1900s", style:"Queen Anne commercial", axis:33.6, weather:"mixed",
+  landmark:"Remnants of the Neptune Beach amusement park", marquee:"Alameda Theatre",
   history:"One of the East Bay's oldest towns, grew via ferry connections to SF and two competing streetcar/rail lines, giving it two separate historic commercial districts.",
   shoot:"Victorian-era storefronts on both Park St. and Webster St.; look for remnants of the old Neptune Beach amusement-park era.",
   street:"Park St & Central Ave",
@@ -555,7 +596,8 @@ const RAW = [
 },
 {
   name:"Downtown Oakland", region:"East Bay – Alameda", type:"complex", lat:37.8044, lng:-122.2712,
-  origin:"Railroad depot", era:"1869",
+  origin:"Railroad depot", era:"1869", style:"Art Deco / Streamline Moderne", axis:26.3, weather:"mixed",
+  landmark:"Frank Ogawa Plaza and the historic City Hall",
   history:"Became the West Coast terminus of the transcontinental railroad in 1869, cementing it as a major port and rail hub.",
   shoot:"Frank Ogawa Plaza, historic City Hall, early skyscrapers.",
   street:"Broadway & 14th St",
@@ -563,7 +605,8 @@ const RAW = [
 },
 {
   name:"Old Oakland", region:"East Bay – Alameda", type:"complex", lat:37.8047, lng:-122.2724,
-  origin:"Railroad depot", era:"1870s–80s",
+  origin:"Railroad depot", era:"1870s–80s", style:"Italianate / iron-front Victorian", axis:116.4, weather:"mixed",
+  landmark:"The restored 1870s cast-iron-front row", market:"Fri",
   history:"Oakland's original downtown commercial district, largely built out in the 1870s–80s before the center of gravity shifted north.",
   shoot:"Restored 1870s cast-iron-front Victorian row, Swan's Market.",
   street:"9th St & Washington St",
@@ -571,7 +614,8 @@ const RAW = [
 },
 {
   name:"Jack London Square", region:"East Bay – Alameda", type:"complex", lat:37.7955, lng:-122.2775,
-  origin:"Ferry / port", era:"1850s–1900s",
+  origin:"Ferry / port", era:"1850s–1900s", style:"early-20th-century brick commercial", axis:26, weather:"mixed",
+  landmark:"Jack London's cabin replica; the waterfront cranes",
   history:"Named for the author who grew up on this working waterfront; long a shipping/warehouse district before redevelopment into dining and entertainment.",
   shoot:"Remaining warehouse brick, waterfront cranes, Jack London's cabin replica.",
   street:"Broadway & Embarcadero",
@@ -579,7 +623,7 @@ const RAW = [
 },
 {
   name:"Oakland Chinatown", region:"East Bay – Alameda", type:"complex", lat:37.7955, lng:-122.2696,
-  origin:"Cultural / immigrant district", era:"1870s–present",
+  origin:"Cultural / immigrant district", era:"1870s–present", style:"early-20th-century brick commercial", axis:116.5, weather:"mixed",
   history:"Formed by Chinese laborers displaced from SF's waterfront and by railroad workers settling after construction ended.",
   shoot:"Dense storefronts, produce markets, community murals.",
   street:"8th St & Webster St",
@@ -587,7 +631,8 @@ const RAW = [
 },
 {
   name:"Uptown Oakland", region:"East Bay – Alameda", type:"complex", lat:37.8098, lng:-122.2687,
-  origin:"Boomtown", era:"1920s–30s",
+  origin:"Boomtown", era:"1920s–30s", style:"Art Deco / Streamline Moderne", axis:11.2, weather:"mixed",
+  marquee:"Fox Theater and Paramount Theatre",
   history:"Built out during Oakland's 1920s boom as a theater and shopping district; the Fox and Paramount are landmark Art Deco survivors.",
   shoot:"Fox Theater and Paramount Theatre marquees, Art Deco facades.",
   street:"Telegraph Ave & 19th St",
@@ -595,7 +640,8 @@ const RAW = [
 },
 {
   name:"Rockridge", region:"East Bay – Alameda", type:"complex", lat:37.8399, lng:-122.2517,
-  origin:"Streetcar suburb", era:"1900s–1920s",
+  origin:"Streetcar suburb", era:"1900s–1920s", style:"early-20th-century brick commercial", axis:177.5, weather:"mixed",
+  landmark:"The BART structure overhead",
   history:"Developed along the Key System streetcar line as an upscale residential suburb with a College Ave. shopping strip.",
   shoot:"College Ave. Craftsman-era commercial buildings, BART station overhead.",
   street:"College Ave & Alcatraz Ave",
@@ -603,7 +649,7 @@ const RAW = [
 },
 {
   name:"Temescal", region:"East Bay – Alameda", type:"complex", lat:37.8378, lng:-122.2632,
-  origin:"Streetcar suburb", era:"1900s",
+  origin:"Streetcar suburb", era:"1900s", style:"early-20th-century brick commercial", axis:8.5, weather:"mixed",
   history:"Grew along Telegraph Ave.'s streetcar line, later became home to the Bay Area's Ethiopian and Eritrean immigrant community.",
   shoot:"Telegraph Ave. storefronts, Ethiopian restaurant row.",
   street:"Telegraph Ave & 51st St",
@@ -611,7 +657,8 @@ const RAW = [
 },
 {
   name:"Grand Lake", region:"East Bay – Alameda", type:"complex", lat:37.8107, lng:-122.2489,
-  origin:"Streetcar suburb", era:"1900s–1920s",
+  origin:"Streetcar suburb", era:"1900s–1920s", style:"Art Deco / Streamline Moderne", weather:"mixed",
+  marquee:"Grand Lake Theatre",
   history:"Grew along the Key System line beside Lake Merritt, anchored by the 1926 Grand Lake Theatre.",
   shoot:"Grand Lake Theatre's lit marquee, lakeside setting.",
   street:"Grand Ave & Lake Park Ave",
@@ -619,7 +666,7 @@ const RAW = [
 },
 {
   name:"Downtown Berkeley", region:"East Bay – Alameda", type:"complex", lat:37.8695, lng:-122.2686,
-  origin:"University town", era:"1860s–1900s",
+  origin:"University town", era:"1860s–1900s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"Grew to serve UC Berkeley (chartered 1868), with the commercial core developing along Shattuck Ave. once the railroad arrived.",
   shoot:"Shattuck Ave. early-1900s storefronts, BART plaza.",
   street:"Shattuck Ave & Center St",
@@ -627,7 +674,7 @@ const RAW = [
 },
 {
   name:"Berkeley Fourth St.", region:"East Bay – Alameda", type:"complex", lat:37.8688, lng:-122.3005,
-  origin:"Modern redevelopment", era:"1900s / 1980s",
+  origin:"Modern redevelopment", era:"1900s / 1980s", style:"early-20th-century brick commercial", axis:165.7, weather:"mixed",
   history:"Originally light-industrial (canneries, mills) near the bay; converted to boutique shopping starting in the 1980s.",
   shoot:"Repurposed industrial brick buildings.",
   street:"4th St & Hearst Ave",
@@ -635,7 +682,8 @@ const RAW = [
 },
 {
   name:"Elmwood (Berkeley)", region:"East Bay – Alameda", type:"complex", lat:37.8571, lng:-122.2508,
-  origin:"Streetcar suburb", era:"1900s–1910s",
+  origin:"Streetcar suburb", era:"1900s–1910s", style:"early-20th-century brick commercial", axis:175.5, weather:"mixed",
+  marquee:"Elmwood Theater",
   history:"A small Key System streetcar-era shopping node serving the surrounding residential tract.",
   shoot:"College Ave. small-scale early-1900s storefronts.",
   street:"College Ave & Ashby Ave",
@@ -643,7 +691,7 @@ const RAW = [
 },
 {
   name:"Solano Ave. (Berkeley/Albany)", region:"East Bay – Alameda", type:"complex", lat:37.8853, lng:-122.2789,
-  origin:"Streetcar suburb", era:"1900s–1920s",
+  origin:"Streetcar suburb", era:"1900s–1920s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"A long neighborhood commercial strip that grew along the streetcar line straddling Berkeley and Albany.",
   shoot:"Continuous early-20th-century storefront strip.",
   street:"Solano Ave & Colusa Ave",
@@ -651,7 +699,8 @@ const RAW = [
 },
 {
   name:"Pleasanton", region:"East Bay – Alameda", type:"confirmed", lat:37.6624, lng:-121.8747,
-  origin:"Railroad depot", era:"1860s–70s",
+  origin:"Railroad depot", era:"1860s–70s", style:"Italianate / iron-front Victorian", axis:19.2, weather:"inland heat",
+  landmark:"The Main St arch and the old water tower",
   history:"Grew around a stagecoach stop, then a rail depot serving the Amador Valley.",
   shoot:"Main St. brick Victorian storefronts, old water tower.",
   street:"Main St & Division St",
@@ -659,7 +708,7 @@ const RAW = [
 },
 {
   name:"Livermore", region:"East Bay – Alameda", type:"confirmed", lat:37.6819, lng:-121.768,
-  origin:"Railroad depot", era:"1860s–70s",
+  origin:"Railroad depot", era:"1860s–70s", style:"early-20th-century brick commercial", weather:"inland heat",
   history:"Founded around a Central Pacific depot; wine grapes were planted almost immediately and the valley has been a wine region since the 1880s.",
   shoot:"First St. brick storefronts, nearby historic wineries.",
   street:"1st St & Livermore Ave",
@@ -667,7 +716,7 @@ const RAW = [
 },
 {
   name:"San Leandro", region:"East Bay – Alameda", type:"confirmed", lat:37.7249, lng:-122.1561,
-  origin:"Agricultural shipping", era:"1850s–1900s",
+  origin:"Agricultural shipping", era:"1850s–1900s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"Became Alameda County's first county seat and a major cherry- and produce-canning center before losing the seat to Oakland.",
   shoot:"Historic E. 14th St./Washington Ave. buildings, cannery-district remnants.",
   street:"E 14th St & Washington Ave",
@@ -675,7 +724,7 @@ const RAW = [
 },
 {
   name:"Hayward", region:"East Bay – Alameda", type:"confirmed", lat:37.6688, lng:-122.0808,
-  origin:"Agricultural shipping", era:"1850s–70s",
+  origin:"Agricultural shipping", era:"1850s–70s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"Grew as an agricultural shipping point, later a cannery and poultry-processing town.",
   shoot:"B St. early-1900s storefronts, mixed with newer infill.",
   street:"B St & Main St",
@@ -683,7 +732,7 @@ const RAW = [
 },
 {
   name:"Albany", region:"East Bay – Alameda", type:"confirmed", lat:37.8869, lng:-122.2977,
-  origin:"Streetcar suburb", era:"1900s–1910s",
+  origin:"Streetcar suburb", era:"1900s–1910s", style:"early-20th-century brick commercial", axis:82.6, weather:"mixed",
   history:"Split off from surrounding Berkeley/Oakland land as a small independent Key System suburb.",
   shoot:"Solano Ave. small-scale storefronts.",
   street:"Solano Ave & San Pablo Ave",
@@ -691,7 +740,8 @@ const RAW = [
 },
 {
   name:"Niles District (Fremont)", region:"East Bay – Alameda", type:"confirmed", lat:37.5763, lng:-121.9744,
-  origin:"Railroad depot", era:"1860s / 1912–16",
+  origin:"Railroad depot", era:"1860s / 1912–16", style:"Queen Anne commercial", weather:"inland heat",
+  landmark:"The Edison Theater and Niles Essanay Silent Film Museum", marquee:"Edison Theater",
   history:"Grew as a rail junction, then became a major silent-film production hub — Essanay Studios made 350+ films here 1912–16, including five Charlie Chaplin films where he developed his Tramp character.",
   shoot:"The Edison Theater/Niles Essanay museum, Niles Canyon Rd., Victorian-era Main St. buildings once used as film backdrops.",
   street:"Niles Blvd & G St",
@@ -699,23 +749,25 @@ const RAW = [
 },
 {
   name:"Centerville (Fremont)", region:"East Bay – Alameda", type:"confirmed", lat:37.5502, lng:-121.988,
-  origin:"Agricultural shipping", era:"1850s–1900s",
+  origin:"Agricultural shipping", era:"1850s–1900s", style:"early-20th-century brick commercial", axis:122.8, weather:"mixed",
   history:"One of five small towns (with Niles, Irvington, Mission San Jose, Warm Springs) later merged into Fremont in 1956; grew as a farming crossroads.",
   shoot:"A few surviving early-1900s storefronts along Fremont Blvd.",
   street:"Fremont Blvd & Post St",
   light:"Quick stop; a handful of surviving storefronts.",
 },
 {
-  name:"Downtown Fremont (Capitol Ave.)", region:"East Bay – Alameda", type:"invented", lat:37.5297, lng:-121.9552,
-  origin:"Modern redevelopment", era:"2010s–present",
+  name:"Downtown Fremont (Capitol Ave.)", region:"East Bay – Alameda", type:"invented", lat:37.5501, lng:-121.9848,
+  origin:"Modern redevelopment", era:"2010s–present", style:"New Urbanist pastiche", axis:30.5, weather:"mixed",
+  pairs_with:"Niles District (Fremont)",
   history:"Fremont was formed in 1956 by merging five older towns and deliberately chose not to designate any of their historic cores as 'downtown'; Capitol Ave. is a recent attempt to build one from scratch.",
   shoot:"New-build architecture — a useful contrast to the older merged districts nearby.",
   street:"Capitol Ave & State St",
-  light:"Midday; shoot it the same trip as Niles for a stark old-vs-new pairing.",
+  light:"Midday; the flat overhead light suits the newness.",
 },
 {
   name:"Emeryville", region:"East Bay – Alameda", type:"invented", lat:37.8313, lng:-122.2852,
-  origin:"Company town", era:"1890s–1900s / 1990s",
+  origin:"Company town", era:"1890s–1900s / 1990s", style:"New Urbanist pastiche", weather:"mixed",
+  pairs_with:"Old Oakland",
   history:"An industrial and vice district (gambling, saloons) skirting Oakland and Berkeley's laws for decades before reinventing itself as an office/mall district in the 1990s.",
   shoot:"Bay Street is a purpose-built outdoor mall posing as a downtown; shoot it against the surviving industrial brick nearby for the contrast.",
   street:"Bay St & Shellmound St",
@@ -723,7 +775,7 @@ const RAW = [
 },
 {
   name:"Piedmont", region:"East Bay – Alameda", type:"none", lat:37.8244, lng:-122.2314,
-  origin:"Country estate", era:"1900s–1920s",
+  origin:"Country estate", era:"1900s–1920s", weather:"mixed",
   history:"Incorporated in 1907 specifically to remain a wealthy residential enclave surrounded by, but separate from, Oakland.",
   shoot:"Grand early-1900s residential architecture; no real commercial subject.",
   street:"Highland Ave & Wildwood Ave",
@@ -731,7 +783,7 @@ const RAW = [
 },
 {
   name:"Union City (Old Alvarado)", region:"East Bay – Alameda", type:"diffuse", lat:37.5934, lng:-122.0438,
-  origin:"Agricultural shipping", era:"1850s–1900s",
+  origin:"Agricultural shipping", era:"1850s–1900s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"Alvarado was an early Alameda County seat contender and salt-production center before merging with Decoto to form Union City in 1959.",
   shoot:"A small remnant of Alvarado's old commercial buildings.",
   street:"Smith St & Watkins St",
@@ -739,7 +791,7 @@ const RAW = [
 },
 {
   name:"Newark", region:"East Bay – Alameda", type:"diffuse", lat:37.5297, lng:-122.0402,
-  origin:"Agricultural shipping", era:"1870s–1900s",
+  origin:"Agricultural shipping", era:"1870s–1900s", style:"postwar strip", axis:67.3, weather:"mixed",
   history:"Grew around salt ponds and a rail junction; remained largely rural/industrial until postwar suburbanization.",
   shoot:"Little historic fabric remains; mostly postwar built form.",
   street:"Thornton Ave & Cherry St",
@@ -747,7 +799,8 @@ const RAW = [
 },
 {
   name:"Dublin", region:"East Bay – Alameda", type:"none", lat:37.7022, lng:-121.9358,
-  origin:"Ranch crossroads", era:"1850s",
+  origin:"Ranch crossroads", era:"1850s", style:"postwar strip", axis:154.4, weather:"inland heat",
+  landmark:"The 1859 church and cemetery at Dublin Heritage Park",
   history:"Named by Irish settlers for the crossroads inn here; stayed a rural crossroads until 1980s–90s tract development exploded around it.",
   shoot:"Little to no historic fabric; a study in instant suburbia.",
   street:"Donlon Way & Dublin Blvd",
@@ -755,7 +808,7 @@ const RAW = [
 },
 {
   name:"Walnut Creek", region:"East Bay – Contra Costa", type:"confirmed", lat:37.9101, lng:-122.0652,
-  origin:"Railroad depot", era:"1860s–1900s",
+  origin:"Railroad depot", era:"1860s–1900s", style:"mid-century commercial", axis:173.7, weather:"inland heat",
   history:"Named for walnut trees along the creek, grew as a rail depot serving surrounding orchards before becoming a major postwar retail hub.",
   shoot:"A few surviving early-1900s buildings amid a heavily redeveloped upscale core.",
   street:"N Main St & Bonanza St",
@@ -763,7 +816,7 @@ const RAW = [
 },
 {
   name:"Danville", region:"East Bay – Contra Costa", type:"confirmed", lat:37.8216, lng:-121.9999,
-  origin:"Ranch crossroads", era:"1850s–1890s",
+  origin:"Ranch crossroads", era:"1850s–1890s", style:"early-20th-century brick commercial", weather:"inland heat",
   history:"Named for early settler Dan Inman, grew slowly as a farming hamlet along the Southern Pacific San Ramon Branch line.",
   shoot:"Hartz Ave. small-town storefronts.",
   street:"Hartz Ave & Diablo Rd",
@@ -771,15 +824,17 @@ const RAW = [
 },
 {
   name:"Martinez", region:"East Bay – Contra Costa", type:"confirmed", lat:38.0194, lng:-122.1341,
-  origin:"County seat", era:"1849",
+  origin:"County seat", era:"1849", style:"early-20th-century brick commercial", axis:55.2, weather:"inland heat",
+  landmark:"The historic courthouse; John Muir's house nearby",
   history:"Founded at a natural ferry crossing on the Carquinez Strait; became Contra Costa's county seat and home to naturalist John Muir.",
   shoot:"Historic courthouse, waterfront ferry-era buildings, John Muir's house nearby.",
   street:"Main St & Ferry St",
   light:"Morning on the waterfront; the courthouse and John Muir's house are both nearby.",
 },
 {
-  name:"Point Richmond", region:"East Bay – Contra Costa", type:"confirmed", lat:37.9107, lng:-122.3839,
-  origin:"Ferry / port", era:"1900s",
+  name:"Point Richmond", region:"East Bay – Contra Costa", type:"confirmed", lat:37.927, lng:-122.3849,
+  origin:"Ferry / port", era:"1900s", style:"early-20th-century brick commercial", axis:13.4, weather:"mixed",
+  landmark:"The tunnel and the triangular plaza",
   history:"Became the western terminus of the Santa Fe Railway and a ferry point to San Francisco, giving it a compact, self-contained historic core distinct from industrial Richmond proper.",
   shoot:"Compact early-1900s brick storefronts around the tunnel/plaza.",
   street:"Park Pl & Washington Ave",
@@ -787,7 +842,8 @@ const RAW = [
 },
 {
   name:"Concord (Todos Santos Plaza)", region:"East Bay – Contra Costa", type:"confirmed", lat:37.9779, lng:-122.0311,
-  origin:"Ranch crossroads", era:"1869",
+  origin:"Ranch crossroads", era:"1869", style:"early-20th-century brick commercial", axis:149.5, weather:"inland heat",
+  landmark:"Todos Santos Plaza, the original town square", market:"Thu",
   history:"Founded on land subdivided from a Mexican rancho, with Todos Santos Plaza laid out as the original town square.",
   shoot:"The plaza itself, a handful of surviving 19th-century buildings.",
   street:"Todos Santos Plaza, Grant St & Willow Pass Rd",
@@ -795,7 +851,7 @@ const RAW = [
 },
 {
   name:"Lafayette", region:"East Bay – Contra Costa", type:"confirmed", lat:37.8858, lng:-122.1181,
-  origin:"Ranch crossroads", era:"1850s",
+  origin:"Ranch crossroads", era:"1850s", style:"postwar strip", axis:80.5, weather:"inland heat",
   history:"Grew slowly as a rural stage stop and later railroad depot; stayed a small town until postwar suburbanization.",
   shoot:"A small, quiet historic core, mostly newer construction around it.",
   street:"Mt Diablo Blvd & Moraga Rd",
@@ -803,7 +859,8 @@ const RAW = [
 },
 {
   name:"Antioch (Rivertown)", region:"East Bay – Contra Costa", type:"confirmed", lat:38.0049, lng:-121.8058,
-  origin:"Boomtown", era:"1849–50",
+  origin:"Boomtown", era:"1849–50", style:"early-20th-century brick commercial", weather:"inland heat",
+  landmark:"The Rivertown waterfront warehouses",
   history:"Founded by New England settlers during the Gold Rush as a Sacramento River shipping port; later a coal- and fish-shipping hub.",
   shoot:"Rivertown's old waterfront warehouses and historic Main St.",
   street:"W 2nd St & G St",
@@ -811,7 +868,7 @@ const RAW = [
 },
 {
   name:"Pittsburg (Old Town)", region:"East Bay – Contra Costa", type:"confirmed", lat:38.028, lng:-121.8847,
-  origin:"Company town", era:"1849 / 1900s",
+  origin:"Company town", era:"1849 / 1900s", style:"early-20th-century brick commercial", weather:"inland heat",
   history:"Originally 'Black Diamond,' a coal-shipping port during the Gold Rush; renamed Pittsburg in 1911 when Columbia Steel (later US Steel) built a major mill here.",
   shoot:"Old Town's early port-era buildings, industrial waterfront relics.",
   street:"Railroad Ave & 3rd St",
@@ -819,7 +876,7 @@ const RAW = [
 },
 {
   name:"Brentwood", region:"East Bay – Contra Costa", type:"confirmed", lat:37.9319, lng:-121.6958,
-  origin:"Agricultural shipping", era:"1870s–1900s",
+  origin:"Agricultural shipping", era:"1870s–1900s", style:"early-20th-century brick commercial", axis:56.8, weather:"inland heat",
   history:"Grew as a shipping point for orchard and row-crop agriculture in the eastern Delta region.",
   shoot:"A small historic core surrounded by newer subdivisions.",
   street:"Oak St & 1st St",
@@ -827,7 +884,8 @@ const RAW = [
 },
 {
   name:"Clayton", region:"East Bay – Contra Costa", type:"confirmed", lat:37.9405, lng:-121.9358,
-  origin:"Ranch crossroads", era:"1850s–1860s",
+  origin:"Ranch crossroads", era:"1850s–1860s", style:"false-front wood", axis:91.8, weather:"inland heat",
+  landmark:"Mt. Diablo standing behind the town",
   history:"Founded near coal mines at the base of Mt. Diablo, later became a quiet agricultural hamlet.",
   shoot:"Small-scale historic buildings at the town center.",
   street:"Main St & Center St",
@@ -835,7 +893,7 @@ const RAW = [
 },
 {
   name:"El Cerrito", region:"East Bay – Contra Costa", type:"diffuse", lat:37.9161, lng:-122.3108,
-  origin:"Streetcar suburb", era:"1900s–1910s",
+  origin:"Streetcar suburb", era:"1900s–1910s", style:"postwar strip", axis:151.2, weather:"mixed",
   history:"Grew along the Key System/Santa Fe line as a residential suburb without ever developing a distinct commercial center.",
   shoot:"San Pablo Ave. strip commercial architecture.",
   street:"San Pablo Ave & Fairmount Ave",
@@ -843,7 +901,7 @@ const RAW = [
 },
 {
   name:"San Pablo", region:"East Bay – Contra Costa", type:"none", lat:37.9622, lng:-122.3453,
-  origin:"Ranch crossroads", era:"1820s / 1950s",
+  origin:"Ranch crossroads", era:"1820s / 1950s", style:"postwar strip", weather:"mixed",
   history:"One of the oldest land grants in the East Bay, but never developed a true downtown; mostly built out as postwar industrial/residential land.",
   shoot:"Little historic fabric; mostly postwar commercial strips.",
   street:"San Pablo Ave & Church Ln",
@@ -851,7 +909,7 @@ const RAW = [
 },
 {
   name:"Pinole", region:"East Bay – Contra Costa", type:"diffuse", lat:38.0044, lng:-122.2989,
-  origin:"Railroad depot", era:"1890s",
+  origin:"Railroad depot", era:"1890s", style:"early-20th-century brick commercial", axis:91.6, weather:"mixed",
   history:"Grew around a rail depot on rancho land; a small 'Old Town' pocket survives near the original townsite.",
   shoot:"Old Town Pinole's small early-1900s commercial row.",
   street:"San Pablo Ave & Tennent Ave",
@@ -859,7 +917,8 @@ const RAW = [
 },
 {
   name:"Hercules", region:"East Bay – Contra Costa", type:"invented", lat:38.0171, lng:-122.2883,
-  origin:"Company town", era:"1879–1970",
+  origin:"Company town", era:"1879–1970", weather:"mixed",
+  landmark:"The surviving California Powder Works office building",
   history:"Built entirely by the California Powder Works / Hercules Powder Company to manufacture dynamite; incorporated in 1900 with plant managers as the first City Council, and stayed a tiny company town until suburban development began in the 1970s.",
   shoot:"Little remains from the plant era on the surface — look for the old CPW office building; otherwise a study in a manufactured modern 'town center.'",
   street:"Sycamore Ave & Willow Ave",
@@ -867,7 +926,7 @@ const RAW = [
 },
 {
   name:"San Ramon", region:"East Bay – Contra Costa", type:"invented", lat:37.7799, lng:-121.978,
-  origin:"Modern redevelopment", era:"1850s / 1980s–90s",
+  origin:"Modern redevelopment", era:"1850s / 1980s–90s", style:"New Urbanist pastiche", weather:"inland heat",
   history:"Stayed rural ranchland until the Bishop Ranch corporate office park development of the 1980s–90s created a business-park-centric 'City Center' with no historic precedent.",
   shoot:"Modern corporate-campus architecture rather than historic fabric.",
   street:"Bishop Dr & Camino Ramon",
@@ -875,7 +934,8 @@ const RAW = [
 },
 {
   name:"Orinda", region:"East Bay – Contra Costa", type:"diffuse", lat:37.8771, lng:-122.1797,
-  origin:"Streetcar suburb", era:"1900s–1920s",
+  origin:"Streetcar suburb", era:"1900s–1920s", style:"Art Deco / Streamline Moderne", weather:"inland heat",
+  marquee:"Orinda Theatre",
   history:"Developed after a rail tunnel connected it to Berkeley/Oakland in 1903; the 1941 Orinda Theatre anchors its small plaza.",
   shoot:"Orinda Theatre's Streamline Moderne marquee.",
   street:"Moraga Way & Camino Pablo",
@@ -883,7 +943,7 @@ const RAW = [
 },
 {
   name:"Moraga", region:"East Bay – Contra Costa", type:"none", lat:37.8349, lng:-122.1297,
-  origin:"Postwar planned suburb", era:"1940s–1950s",
+  origin:"Postwar planned suburb", era:"1940s–1950s", style:"postwar strip", weather:"inland heat",
   history:"Named for the Moraga family land grant, stayed rural until postwar tract development around a shopping center.",
   shoot:"Little historic fabric; a shopping-center-centric layout.",
   street:"Moraga Rd & School St",
@@ -891,7 +951,7 @@ const RAW = [
 },
 {
   name:"Pleasant Hill", region:"East Bay – Contra Costa", type:"invented", lat:37.948, lng:-122.0602,
-  origin:"Postwar planned suburb", era:"1940s–1950s",
+  origin:"Postwar planned suburb", era:"1940s–1950s", style:"New Urbanist pastiche", axis:13.2, weather:"inland heat",
   history:"Built almost entirely after WWII as bedroom-community tract housing, later gaining a planned downtown near BART.",
   shoot:"Newer BART-adjacent development; minimal historic material.",
   street:"Crescent Dr & Monument Blvd",
@@ -899,7 +959,8 @@ const RAW = [
 },
 {
   name:"Sausalito", region:"North Bay – Marin", type:"confirmed", lat:37.8591, lng:-122.4853,
-  origin:"Ferry / port", era:"1850s / 1940s",
+  origin:"Ferry / port", era:"1850s / 1940s", style:"Queen Anne commercial", axis:118.1, weather:"mixed",
+  landmark:"The houseboat docks",
   history:"A fishing and ferry town that became a major WWII Liberty Ship shipyard (Marinship), then a bohemian houseboat community afterward.",
   shoot:"Waterfront Victorian-era buildings, houseboat docks, old shipyard remnants.",
   street:"Bridgeway & Princess St",
@@ -907,7 +968,8 @@ const RAW = [
 },
 {
   name:"Mill Valley", region:"North Bay – Marin", type:"confirmed", lat:37.906, lng:-122.545,
-  origin:"Railroad depot", era:"1830s–1900s",
+  origin:"Railroad depot", era:"1830s–1900s", style:"Queen Anne commercial", weather:"mixed",
+  landmark:"The old depot, now a bookstore and cafe",
   history:"Named for an 1830s sawmill on Old Mill Creek; became a resort/residential town once the railroad and the ferry-connected Mt. Tamalpais scenic railway arrived.",
   shoot:"Redwood-shaded small-town core, old depot plaza.",
   street:"Throckmorton Ave & Miller Ave (Lytton Square / Depot Plaza)",
@@ -915,7 +977,8 @@ const RAW = [
 },
 {
   name:"San Rafael", region:"North Bay – Marin", type:"confirmed", lat:37.9735, lng:-122.5311,
-  origin:"Mission / Pueblo", era:"1817",
+  origin:"Mission / Pueblo", era:"1817", style:"Mission / Spanish Colonial Revival", axis:97.2, weather:"inland heat",
+  landmark:"The mission bell replica and the courthouse tower",
   history:"Grew around Mission San Rafael Arcángel (1817), later became Marin's county seat.",
   shoot:"Mission bell replica, historic courthouse tower.",
   street:"4th St & A St",
@@ -923,7 +986,7 @@ const RAW = [
 },
 {
   name:"San Anselmo", region:"North Bay – Marin", type:"confirmed", lat:37.9747, lng:-122.5619,
-  origin:"Railroad depot", era:"1890s",
+  origin:"Railroad depot", era:"1890s", style:"early-20th-century brick commercial", weather:"inland heat",
   history:"Grew around a North Pacific Coast Railroad depot and a Presbyterian seminary founded in 1892.",
   shoot:"San Anselmo Ave. antique-shop storefronts.",
   street:"San Anselmo Ave & Tunstead Ave",
@@ -931,7 +994,8 @@ const RAW = [
 },
 {
   name:"Tiburon", region:"North Bay – Marin", type:"confirmed", lat:37.8735, lng:-122.4566,
-  origin:"Ferry / port", era:"1880s",
+  origin:"Ferry / port", era:"1880s", style:"Queen Anne commercial", weather:"mixed",
+  landmark:"Ark Row — converted 19th-century houseboats",
   history:"Became the terminus of the North Pacific Coast Railroad's ferry connection to SF, with a rail yard where the downtown now sits.",
   shoot:"Waterfront Victorian-era Ark Row (converted houseboats).",
   street:"Main St & Tiburon Blvd",
@@ -939,7 +1003,7 @@ const RAW = [
 },
 {
   name:"Larkspur", region:"North Bay – Marin", type:"confirmed", lat:37.9341, lng:-122.5353,
-  origin:"Ferry / port", era:"1890s–1900s",
+  origin:"Ferry / port", era:"1890s–1900s", style:"early-20th-century brick commercial", weather:"mixed",
   history:"Grew around a rail depot connecting to the Sausalito ferry; still a Golden Gate Ferry terminus today.",
   shoot:"Small downtown core near the ferry landing.",
   street:"Magnolia Ave & Ward St",
@@ -947,7 +1011,7 @@ const RAW = [
 },
 {
   name:"Fairfax", region:"North Bay – Marin", type:"confirmed", lat:37.9871, lng:-122.5886,
-  origin:"Railroad depot", era:"1900s",
+  origin:"Railroad depot", era:"1900s", style:"false-front wood", weather:"inland heat",
   history:"Grew as a North Pacific Coast Railroad stop and weekend resort town for San Franciscans escaping summer fog.",
   shoot:"Small, funky early-1900s storefronts.",
   street:"Broadway Blvd & Bolinas Rd",
@@ -955,7 +1019,7 @@ const RAW = [
 },
 {
   name:"Novato", region:"North Bay – Marin", type:"confirmed", lat:38.1074, lng:-122.5697,
-  origin:"Railroad depot", era:"1850s–1900s",
+  origin:"Railroad depot", era:"1850s–1900s", style:"early-20th-century brick commercial", axis:102.8, weather:"inland heat",
   history:"Named for a Coast Miwok leader; grew slowly around a rail depot serving dairy ranches.",
   shoot:"Grant Ave. modest early-1900s storefronts.",
   street:"Grant Ave & Sherman Ave",
@@ -963,7 +1027,7 @@ const RAW = [
 },
 {
   name:"Corte Madera", region:"North Bay – Marin", type:"diffuse", lat:37.9257, lng:-122.5272,
-  origin:"Railroad depot", era:"1850s–1900s",
+  origin:"Railroad depot", era:"1850s–1900s", style:"postwar strip", weather:"mixed",
   history:"Named for a Spanish-era lumber-cutting site; developed later than its neighbors, mostly as postwar shopping-center commercial.",
   shoot:"Limited historic fabric; shopping-center-centric.",
   street:"Tamalpais Dr & Redwood Ave",
@@ -971,7 +1035,7 @@ const RAW = [
 },
 {
   name:"Belvedere", region:"North Bay – Marin", type:"none", lat:37.8697, lng:-122.4661,
-  origin:"Resort / wine country", era:"1890s",
+  origin:"Resort / wine country", era:"1890s", weather:"mixed",
   history:"Developed as a small, exclusive residential resort island; deliberately never built a commercial downtown.",
   shoot:"No real commercial subject; residential architecture only.",
   street:"Beach Rd & San Rafael Ave",
@@ -979,7 +1043,8 @@ const RAW = [
 },
 {
   name:"Petaluma", region:"North Bay – Sonoma", type:"confirmed", lat:38.2324, lng:-122.6367,
-  origin:"Ferry / port", era:"1850s–1900s",
+  origin:"Ferry / port", era:"1850s–1900s", style:"Italianate / iron-front Victorian", axis:115.9, weather:"inland heat",
+  landmark:"The riverfront brick warehouses",
   history:"Grew as a Gold Rush-era river shipping port, later billing itself the 'Egg Basket of the World' for its poultry industry — the riverfront warehouses are frequent film locations for exactly that period look.",
   shoot:"Riverfront brick warehouses, iron-front Victorian downtown.",
   street:"Petaluma Blvd N & Western Ave",
@@ -987,7 +1052,8 @@ const RAW = [
 },
 {
   name:"Healdsburg", region:"North Bay – Sonoma", type:"confirmed", lat:38.6102, lng:-122.8697,
-  origin:"Railroad depot", era:"1850s–1900s",
+  origin:"Railroad depot", era:"1850s–1900s", style:"Queen Anne commercial", axis:77.2, weather:"inland heat",
+  landmark:"The 1857 plaza",
   history:"Laid out around a Mexican-era land-grant plaza, later connected by rail to become a hop- and wine-shipping center.",
   shoot:"The historic plaza itself, surrounding Victorian-era storefronts.",
   street:"Healdsburg Plaza, Matheson St & Center St",
@@ -995,7 +1061,8 @@ const RAW = [
 },
 {
   name:"Sonoma", region:"North Bay – Sonoma", type:"confirmed", lat:38.2919, lng:-122.458,
-  origin:"Mission / Pueblo", era:"1823–35",
+  origin:"Mission / Pueblo", era:"1823–35", style:"Mission / Spanish Colonial Revival", axis:8.2, weather:"inland heat",
+  landmark:"Vallejo's adobe barracks on the plaza",
   history:"Site of the northernmost California mission (1823) and General Mariano Vallejo's 1830s Mexican military pueblo; the 1846 Bear Flag Revolt began on the plaza.",
   shoot:"Sonoma Plaza, mission church, Vallejo's adobe barracks.",
   street:"Sonoma Plaza, 1st St E & E Napa St",
@@ -1003,7 +1070,8 @@ const RAW = [
 },
 {
   name:"Santa Rosa", region:"North Bay – Sonoma", type:"confirmed", lat:38.4404, lng:-122.7141,
-  origin:"County seat", era:"1850s–70s",
+  origin:"County seat", era:"1850s–70s", style:"early-20th-century brick commercial", axis:59.5, weather:"inland heat",
+  landmark:"Railroad Square's stone buildings",
   history:"Became Sonoma County's seat and a rail hub; the historic core was heavily damaged in the 1906 earthquake and rebuilt.",
   shoot:"4th St. early-1900s rebuilt storefronts.",
   street:"4th St & Mendocino Ave",
@@ -1011,7 +1079,7 @@ const RAW = [
 },
 {
   name:"Sebastopol", region:"North Bay – Sonoma", type:"confirmed", lat:38.4021, lng:-122.8236,
-  origin:"Agricultural shipping", era:"1850s–1900s",
+  origin:"Agricultural shipping", era:"1850s–1900s", style:"early-20th-century brick commercial", axis:155.3, weather:"inland heat",
   history:"Grew as a shipping point for the Gravenstein apple orchards that once covered the area.",
   shoot:"Small, quirky early-1900s storefronts.",
   street:"Main St & Bodega Ave",
@@ -1019,7 +1087,8 @@ const RAW = [
 },
 {
   name:"Cotati", region:"North Bay – Sonoma", type:"confirmed", lat:38.3277, lng:-122.7092,
-  origin:"Railroad depot", era:"1890s",
+  origin:"Railroad depot", era:"1890s", style:"early-20th-century brick commercial", axis:144.1, weather:"inland heat",
+  landmark:"The hexagonal plaza — unusual for California",
   history:"Platted with a distinctive hexagonal town plaza by developer Newton Smyth in the 1890s.",
   shoot:"The hexagonal plaza layout itself, unusual for California.",
   street:"La Plaza, Old Redwood Hwy & W Sierra Ave",
@@ -1027,15 +1096,16 @@ const RAW = [
 },
 {
   name:"Windsor (Town Green)", region:"North Bay – Sonoma", type:"invented", lat:38.5471, lng:-122.8164,
-  origin:"Modern redevelopment", era:"1990s–2000s",
+  origin:"Modern redevelopment", era:"1990s–2000s", style:"New Urbanist pastiche", axis:3.4, weather:"inland heat",
+  pairs_with:"Healdsburg",
   history:"Incorporated only in 1992; the 'Town Green' downtown was deliberately designed and built from scratch in the New Urbanist style rather than growing organically.",
   shoot:"Deliberately old-fashioned new construction — a useful contrast to genuinely historic plazas nearby.",
   street:"Town Green, Market St & McClelland Dr",
-  light:"Midday; deliberately old-looking new construction — shoot it alongside Healdsburg for the contrast.",
+  light:"Midday; deliberately old-looking new construction, best shot without shadows to soften it.",
 },
 {
   name:"Cloverdale", region:"North Bay – Sonoma", type:"confirmed", lat:38.8055, lng:-123.0172,
-  origin:"Railroad depot", era:"1870s",
+  origin:"Railroad depot", era:"1870s", style:"early-20th-century brick commercial", axis:153, weather:"inland heat",
   history:"Grew as the northern terminus of an early rail line up the Russian River Valley.",
   shoot:"Small historic Main St. core.",
   street:"Cloverdale Blvd & 1st St",
@@ -1043,7 +1113,7 @@ const RAW = [
 },
 {
   name:"Rohnert Park", region:"North Bay – Sonoma", type:"none", lat:38.3396, lng:-122.7011,
-  origin:"Postwar planned suburb", era:"1950s–60s",
+  origin:"Postwar planned suburb", era:"1950s–60s", style:"postwar strip", weather:"inland heat",
   history:"Built almost entirely from scratch by developers in the 1950s–60s as a planned residential community; has no organic historic core.",
   shoot:"Little historic fabric; a study in planned-community design.",
   street:"State Farm Dr & Rohnert Park Expy",
@@ -1051,7 +1121,8 @@ const RAW = [
 },
 {
   name:"Napa", region:"North Bay – Napa", type:"confirmed", lat:38.2975, lng:-122.2869,
-  origin:"Ferry / port", era:"1848–50",
+  origin:"Ferry / port", era:"1848–50", style:"Italianate / iron-front Victorian", weather:"inland heat",
+  landmark:"The Napa Mill riverfront warehouses",
   history:"Founded as a river-shipping port at the head of navigation on the Napa River, moving lumber, produce, and later wine.",
   shoot:"Historic riverfront warehouses, Victorian downtown core.",
   street:"1st St & Main St",
@@ -1059,7 +1130,7 @@ const RAW = [
 },
 {
   name:"St. Helena", region:"North Bay – Napa", type:"confirmed", lat:38.5052, lng:-122.47,
-  origin:"Agricultural shipping", era:"1850s–1900s",
+  origin:"Agricultural shipping", era:"1850s–1900s", style:"early-20th-century brick commercial", axis:127.5, weather:"inland heat",
   history:"Grew as a shipping and processing point for the valley's early wine and orchard industry.",
   shoot:"Stone-and-brick Main St., wineries-turned-storefronts.",
   street:"Main St & Hunt Ave",
@@ -1067,7 +1138,7 @@ const RAW = [
 },
 {
   name:"Calistoga", region:"North Bay – Napa", type:"confirmed", lat:38.5788, lng:-122.5797,
-  origin:"Resort / wine country", era:"1859–62",
+  origin:"Resort / wine country", era:"1859–62", style:"false-front wood", weather:"inland heat",
   history:"Founded by Sam Brannan (California's first millionaire) as a hot-springs resort, with the name itself a deliberate blend of 'California' and 'Saratoga.'",
   shoot:"Spa-era architecture, hot-springs history, small-town Main St.",
   street:"Lincoln Ave & Washington St",
@@ -1075,7 +1146,7 @@ const RAW = [
 },
 {
   name:"Yountville", region:"North Bay – Napa", type:"confirmed", lat:38.4016, lng:-122.3608,
-  origin:"Resort / wine country", era:"1836",
+  origin:"Resort / wine country", era:"1836", style:"early-20th-century brick commercial", weather:"inland heat",
   history:"Named for George Yount, the first American to receive a land grant in Napa Valley (1836); stayed a small farming hamlet until wine tourism transformed it.",
   shoot:"Small-scale historic buildings now housing high-end restaurants.",
   street:"Washington St & Yount St",
@@ -1083,7 +1154,7 @@ const RAW = [
 },
 {
   name:"American Canyon", region:"North Bay – Napa", type:"none", lat:38.1749, lng:-122.26,
-  origin:"Modern redevelopment", era:"1990s",
+  origin:"Modern redevelopment", era:"1990s", style:"postwar strip", weather:"inland heat",
   history:"One of the Bay Area's youngest incorporated cities (1992), built mostly as bedroom-community subdivisions for Napa/Vallejo commuters.",
   shoot:"Little to no historic fabric.",
   street:"American Canyon Rd & Broadway",
@@ -1091,7 +1162,8 @@ const RAW = [
 },
 {
   name:"Benicia", region:"North Bay – Solano", type:"confirmed", lat:38.0494, lng:-122.1586,
-  origin:"Boomtown", era:"1847 / 1850s–1900s",
+  origin:"Boomtown", era:"1847 / 1850s–1900s", style:"Italianate / iron-front Victorian", axis:29.7, weather:"inland heat",
+  landmark:"The old State Capitol building, two blocks off First St",
   history:"Founded as a planned town hoping to rival San Francisco, briefly served as California's state capital (1853–54), and later became a major Army arsenal and shipbuilding town.",
   shoot:"First St.'s brick Gold Rush-era storefronts, the old state capitol building (a museum today).",
   street:"1st St & Military East",
@@ -1099,7 +1171,8 @@ const RAW = [
 },
 {
   name:"Vallejo", region:"North Bay – Solano", type:"confirmed", lat:38.1041, lng:-122.2566,
-  origin:"Company town", era:"1850–1854 / 1854–1996",
+  origin:"Company town", era:"1850–1854 / 1854–1996", style:"Queen Anne commercial", axis:91.1, weather:"inland heat",
+  landmark:"Mare Island's historic shipyard buildings",
   history:"Also briefly California's state capital, then home to Mare Island Naval Shipyard (1854–1996), the US Navy's first Pacific base.",
   shoot:"Georgia St. Victorian-era downtown, Mare Island's historic shipyard buildings.",
   street:"Georgia St & Marin St",
@@ -1107,7 +1180,7 @@ const RAW = [
 },
 {
   name:"Vacaville", region:"North Bay – Solano", type:"confirmed", lat:38.3566, lng:-121.9877,
-  origin:"Railroad depot", era:"1860s–70s",
+  origin:"Railroad depot", era:"1860s–70s", style:"early-20th-century brick commercial", axis:90.4, weather:"inland heat",
   history:"Named for the Vaca family land grant, grew as a rail shipping point for orchard fruit.",
   shoot:"Main St./Merchant St. brick storefronts.",
   street:"Main St & Merchant St",
@@ -1115,7 +1188,8 @@ const RAW = [
 },
 {
   name:"Suisun City", region:"North Bay – Solano", type:"confirmed", lat:38.2382, lng:-122.0397,
-  origin:"Ferry / port", era:"1850s",
+  origin:"Ferry / port", era:"1850s", style:"early-20th-century brick commercial", axis:0.2, weather:"inland heat",
+  landmark:"The restored waterfront channel",
   history:"Grew as a small Delta shipping port; the historic waterfront was extensively restored in the 1990s after decades of decline.",
   shoot:"Restored waterfront plaza and channel-front buildings.",
   street:"Main St & Solano St",
@@ -1123,7 +1197,7 @@ const RAW = [
 },
 {
   name:"Fairfield", region:"North Bay – Solano", type:"confirmed", lat:38.2494, lng:-122.04,
-  origin:"County seat", era:"1850s / 1943",
+  origin:"County seat", era:"1850s / 1943", style:"early-20th-century brick commercial", axis:90.3, weather:"inland heat",
   history:"Founded as Solano's county seat, but its modern growth is tied to nearby Travis Air Force Base, established in 1943.",
   shoot:"Texas St.'s modest historic core.",
   street:"Texas St & Jefferson St",
@@ -1131,7 +1205,7 @@ const RAW = [
 },
 {
   name:"Dixon", region:"North Bay – Solano", type:"confirmed", lat:38.4455, lng:-121.8233,
-  origin:"Railroad depot", era:"1868",
+  origin:"Railroad depot", era:"1868", style:"early-20th-century brick commercial", axis:0.3, weather:"inland heat",
   history:"Grew around a Central Pacific Railroad depot in the middle of Solano County's grain-farming belt.",
   shoot:"Small historic Main St. core amid farmland.",
   street:"1st St & A St",
@@ -1139,7 +1213,7 @@ const RAW = [
 },
 {
   name:"Rio Vista", region:"North Bay – Solano", type:"confirmed", lat:38.1583, lng:-121.7016,
-  origin:"Ferry / port", era:"1857",
+  origin:"Ferry / port", era:"1857", style:"early-20th-century brick commercial", axis:135.5, weather:"inland heat",
   history:"One of the oldest towns on the Sacramento River Delta, built on a shipping trade in produce, fish, and later natural gas.",
   shoot:"Small-town waterfront Main St. on the Delta.",
   street:"Main St & 2nd St",
@@ -1147,7 +1221,8 @@ const RAW = [
 },
 {
   name:"California Ave (Palo Alto)", region:"Peninsula", type:"confirmed", lat:37.4276, lng:-122.141,
-  origin:"Railroad depot", era:"1900s–25",
+  origin:"Railroad depot", era:"1900s–25", style:"early-20th-century brick commercial", weather:"mixed",
+  market:"Sun",
   history:"Grew around the separate Mayfield townsite — an older, rowdier saloon town that Palo Alto annexed in 1925 — and its own Caltrain stop; it remains Palo Alto's quieter, more local second downtown.",
   shoot:"Wider street than University Ave, Sunday farmers market, less glossy storefronts. A genuinely different subject from University Ave, not a duplicate.",
   street:"California Ave & Birch St",
@@ -1155,7 +1230,8 @@ const RAW = [
 },
 {
   name:"The Alameda (San Jose)", region:"South Bay", type:"confirmed", lat:37.3315, lng:-121.9091,
-  origin:"Mission / Pueblo", era:"1795 / 1900s",
+  origin:"Mission / Pueblo", era:"1795 / 1900s", style:"mid-century commercial", weather:"mixed",
+  landmark:"The 1795 alameda's mature street trees",
   history:"Laid out in 1795 as a tree-lined walking route between the San Jose pueblo and Mission Santa Clara — one of California's oldest engineered roads — later a streetcar-era commercial strip.",
   shoot:"Older low-rise storefronts, the Rose Garden neighborhood edge, a corridor with genuine Spanish-era lineage.",
   street:"The Alameda & Hester Ave",
@@ -1163,7 +1239,8 @@ const RAW = [
 },
 {
   name:"Mission San Jose (Fremont)", region:"East Bay – Alameda", type:"confirmed", lat:37.5334, lng:-121.9201,
-  origin:"Mission / Pueblo", era:"1797",
+  origin:"Mission / Pueblo", era:"1797", style:"Mission / Spanish Colonial Revival", axis:166.3, weather:"inland heat",
+  landmark:"The restored mission church and its adobe walls",
   history:"Grew around Mission San José (1797), the oldest settlement in what became Fremont and one of five towns merged into the city in 1956.",
   shoot:"The restored mission church and its adobe walls, plus the small historic commercial strip on Mission Blvd.",
   street:"Mission Blvd & Washington Blvd",
@@ -1171,7 +1248,8 @@ const RAW = [
 },
 {
   name:"Telegraph Ave (Berkeley)", region:"East Bay – Alameda", type:"complex", lat:37.8668, lng:-122.259,
-  origin:"University town", era:"1900s / 1960s",
+  origin:"University town", era:"1900s / 1960s", style:"early-20th-century brick commercial", weather:"mixed",
+  landmark:"People's Park",
   history:"The commercial strip running south from UC Berkeley's Sather Gate; became the epicenter of 1960s student protest and countercultural street life.",
   shoot:"Street vendors, People's Park, layered posters and murals — dense visual texture, very different from Shattuck Ave.",
   street:"Telegraph Ave & Bancroft Way",
@@ -1179,7 +1257,8 @@ const RAW = [
 },
 {
   name:"Piedmont Ave (Oakland)", region:"East Bay – Alameda", type:"complex", lat:37.8283, lng:-122.2496,
-  origin:"Streetcar suburb", era:"1900s–1920s",
+  origin:"Streetcar suburb", era:"1900s–1920s", style:"early-20th-century brick commercial", axis:46.2, weather:"mixed",
+  landmark:"The Mountain View Cemetery gates", marquee:"Piedmont Theatre",
   history:"A streetcar-era commercial strip that grew serving the Mountain View Cemetery entrance and surrounding residential hills.",
   shoot:"Independent storefronts, the historic Piedmont Theatre marquee, tree-lined street.",
   street:"Piedmont Ave & 41st St",
@@ -1187,7 +1266,7 @@ const RAW = [
 },
 {
   name:"Clement St (Inner Richmond, SF)", region:"San Francisco", type:"complex", lat:37.7828, lng:-122.4675,
-  origin:"Cultural / immigrant district", era:"1900s–1970s",
+  origin:"Cultural / immigrant district", era:"1900s–1970s", style:"early-20th-century brick commercial", axis:86.7, weather:"coastal fog",
   history:"Built out after the 1906 earthquake pushed development west; became a second Chinatown from the 1970s as Chinese families moved out of the crowded downtown district.",
   shoot:"Dense produce markets and bakeries, bilingual signage, frequent fog — a very different light than downtown SF.",
   street:"Clement St & 6th Ave",
@@ -1195,7 +1274,7 @@ const RAW = [
 },
 {
   name:"Irving St (Inner Sunset, SF)", region:"San Francisco", type:"complex", lat:37.7641, lng:-122.4665,
-  origin:"Streetcar suburb", era:"1920s–30s",
+  origin:"Streetcar suburb", era:"1920s–30s", style:"early-20th-century brick commercial", axis:86.8, weather:"coastal fog",
   history:"Sand dunes until the Twin Peaks streetcar tunnel opened in 1918, which triggered rapid development of the Sunset's uniform housing rows.",
   shoot:"Neighborhood commercial strip at the edge of Golden Gate Park, classic Sunset fog and low sun.",
   street:"Irving St & 9th Ave",
@@ -1203,11 +1282,55 @@ const RAW = [
 },
 {
   name:"Macdonald Ave (Downtown Richmond)", region:"East Bay – Contra Costa", type:"diffuse", lat:37.9352, lng:-122.3438,
-  origin:"Company town", era:"1900s / 1940s",
+  origin:"Company town", era:"1900s / 1940s", style:"mid-century commercial", axis:100.2, weather:"mixed",
+  landmark:"Rosie the Riveter National Historical Park, on the waterfront",
   history:"Richmond's main commercial street, which boomed enormously during WWII when the Kaiser Shipyards drew ~100,000 workers, then declined sharply after the yards closed.",
   shoot:"Faded mid-century commercial architecture, WWII home-front history — the Rosie the Riveter National Historical Park is nearby on the waterfront.",
   street:"Macdonald Ave & 12th St",
   light:"Weekday daytime. Pair with the Rosie the Riveter park on the waterfront.",
+},
+{
+  name:"Alviso (San Jose)", region:"South Bay", type:"diffuse", lat:37.426, lng:-121.9752,
+  origin:"Ferry / port", era:"1850s–1900s", style:"false-front wood", axis:91.4, weather:"mixed",
+  landmark:"The old port town sitting below sea level behind its levees",
+  history:"Founded as the head of navigation on the South Bay, shipping produce and New Almaden quicksilver out by schooner until the railroad took the traffic and hydraulic-mining silt closed the channel. Annexed by San Jose in 1968 and largely left alone since; decades of groundwater pumping dropped the town below sea level, so it now sits behind levees.",
+  shoot:"Wood-frame remnants of the port town, the marina and its derelict pilings, and the salt ponds and levee roads out past the last street.",
+  street:"Elizabeth St & Gold St",
+  light:"Sunrise over the salt ponds, or late afternoon when the levees go warm. The emptiness is the subject — this is the South Bay's answer to Downtown Santa Clara.",
+},
+{
+  name:"New Almaden (San Jose)", region:"South Bay", type:"confirmed", lat:37.1766, lng:-121.8214,
+  origin:"Company town", era:"1845–1900s", style:"false-front wood", weather:"inland heat",
+  landmark:"Casa Grande, the 1854 mine manager's house",
+  history:"Grew around North America's most productive quicksilver mine, opened in 1845 — the mercury it produced is what made Sierra gold extraction possible. The company ran the village outright, and unusually for California the result survives largely intact: miners' cottages, the Casa Grande, and the works up the hill.",
+  shoot:"The 1854 Casa Grande, board-and-batten cottages strung along Almaden Rd, mine works and tailings on the hillside above.",
+  street:"Almaden Rd & Bertram Rd",
+  light:"Late afternoon. The canyon closes early so the window is short, and the light arrives sideways down the road.",
+},
+{
+  name:"Alum Rock Ave / Little Portugal (San Jose)", region:"South Bay", type:"complex", lat:37.3492, lng:-121.8595,
+  origin:"Cultural / immigrant district", era:"1900s–present", style:"postwar strip", weather:"mixed",
+  landmark:"The Five Wounds Portuguese National Church tower, a few streets off the avenue",
+  history:"The old road out to Alum Rock Park became East San Jose's main commercial street. Azorean Portuguese families settled the blocks around it from the early 1900s and built Five Wounds church; the corridor later became one of the city's densest Mexican-American business strips, and was recognised as the Little Portugal cultural district in 2021.",
+  shoot:"Unglossed storefronts and hand-painted signage, Portuguese bakeries and taquerías on the same block, the church tower closing the view down the side streets.",
+  street:"Alum Rock Ave & N 33rd St",
+  light:"Weekday late afternoon, when the street is working rather than performing.",
+},
+{
+  name:"Monte Sereno", region:"South Bay", type:"none", lat:37.2392, lng:-121.998,
+  origin:"Country estate", era:"1957", weather:"mixed",
+  history:"Incorporated in 1957 by residents of the hills between Los Gatos and Saratoga, expressly to stay residential. The city has almost no commercial zoning and has never had a business district of any kind.",
+  shoot:"Nothing commercial to photograph. The interest is negative: a city of 3,500 with no shops, wedged between two intact downtowns.",
+  street:"Saratoga-Los Gatos Rd",
+  light:"Low priority. Shoot Los Gatos or Saratoga Village instead and log this one as a data point.",
+},
+{
+  name:"Los Altos Hills", region:"South Bay", type:"none", lat:37.3793, lng:-122.1372,
+  origin:"Country estate", era:"1956", weather:"mixed",
+  history:"Incorporated in 1956 to head off annexation by Los Altos and Palo Alto, with zoning that mandates one-acre minimum lots and bars commercial development — along with sidewalks and streetlights.",
+  shoot:"No commercial fabric at all. Oak hills, horse fencing, and the pathway network are the only subjects.",
+  street:"Fremont Rd & Concepcion Rd",
+  light:"Golden hour on the oak hills. There is no street here to shoot down.",
 },
 ];
 

@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Secrets — these never belong in the repo. Keys and certs go to 1Password.
+.env
+.env*.local
+*.pem
+
+# Can hold secrets inside allow rules
+.claude/settings.local.json
+.claude/worktrees/
+
+# Assets tree: deny by default, allowlist the docs.
+# Photography inputs/outputs live here, never in git —
+#   in/   irreplaceable originals (scans, historic photo repros)
+#   out/  edits and exports worth keeping
+#   ref/  expensive to re-fetch (archive downloads, tile caches)
+#   work/ churn, never synced
+/data/*
+!/data/README.md
+!/data/.syncignore

@@ -123,6 +123,47 @@ deviates more than 8° from the mean. That threshold is what keeps the dates hon
   boundary, but grouping by region separates them. Left alone deliberately — pick one
   only if you are willing to re-think the Peninsula/South Bay line generally.
 
+## Where this is going
+
+The project works outward from the South Bay — Campbell, Saratoga, Los Gatos, the San
+Jose neighbourhoods are the first shooting season — then to the rest of the Bay Area. So
+adding locations is routine, not exceptional, and the tooling assumes it.
+
+**Adding a location.** Write the entry with the required fields plus whatever optional
+ones you actually know, then measure the bearing rather than estimating it:
+
+```bash
+node tools/measure-bearings.js          # fetches only the new entries
+node tools/apply-bearings.js --write    # folds in axis; touches nothing else
+node tools/test-solar.js                # cheap, no browser
+```
+
+### Field coverage, as of 131 entries
+
+| Field | Coverage | State |
+|---|---|---|
+| `weather` | 131/131 | Done. |
+| `style` | 123/131 | Effectively done. The eight without one are places with no commercial fabric to classify — Atherton, Portola Valley, Piedmont, Belvedere, Monte Sereno, Los Altos Hills, Hercules, Pacifica. Six are verdict `none`, the other two `diffuse` and `invented`. Leave them empty; a style there would be invention. |
+| `axis` | 80/131 | Limited by measurement, not by authoring. See *Known data issues*. |
+| `landmark` | 62/131 | **The open work.** Only 34 of 67 `confirmed` downtowns name the one object that makes the picture. This is the field most worth filling, and it needs someone who has been there or has looked hard at photographs. |
+| `marquee` | 10 | Sparse by nature, but probably undercounted — these were promoted from prose that already happened to name a theatre, not from a survey of surviving marquees. |
+| `market` | 6 | Same: promoted from prose. Verify days before relying on any of them. |
+| `pairs_with` | 5 | Add a pair whenever the contrast is the picture, not just when two places are near each other. |
+
+`landmark`, `marquee` and `market` are the ones that reward a deliberate pass. `style`
+and `weather` do not need one.
+
+### Open items
+
+- **Enable GitHub Pages** — Settings → Pages → Source: `main` / root. Until that is on
+  there is no https origin, and the home-screen app, the per-device visit storage and the
+  offline service worker are all inert. This is the single highest-value unfinished step.
+- **The six unmeasured streets are name mismatches, not dead ends.** Cupertino's is
+  `Main Street Driveway` in OpenStreetMap; the others are similar, or have anchors too far
+  from the street to match. Each is a small fix to the entry's `street` or coordinates,
+  after which `measure-bearings.js` will resolve it.
+- The eighteen drifted anchors and the Palo Alto region split, both above.
+
 ## Conventions
 
 - Prose fields are written to be read standing on a pavement. Full sentences, no

@@ -1,7 +1,13 @@
 // End-to-end checks against the real page in a headless browser.
-// Leaflet is served from a CDN this sandbox can't reach, so it's stubbed with
-// just enough surface for the map paths to run — that also exercises the code
-// that has to keep working when the CDN is unavailable in the field.
+// Leaflet is stubbed with just enough surface for the map paths to run — that
+// also exercises the code that has to keep working when the CDN is unavailable
+// in the field.
+//
+// The CDN is blocked explicitly rather than assumed unreachable. addInitScript
+// runs before page scripts, so a reachable cdnjs would load the real Leaflet
+// straight over window.L and the stub's counters would never move: the three
+// pan/fly assertions failed on a networked machine and passed in the sandbox
+// this was written in. test-offline.js already blocked it for the same reason.
 //   npm i playwright && node tools/test-page.js
 //
 // Playwright is the only thing in this repo that needs installing, and only for
@@ -39,6 +45,9 @@ const check = (label, cond, detail) => {
   const browser = await chromium.launch();
   const ctx = await browser.newContext();
   await ctx.addInitScript(LEAFLET_STUB);
+  // Keep the stub authoritative no matter what the network can reach.
+  await ctx.route('**cdnjs.cloudflare.com/**', r => r.abort());
+  await ctx.route('**basemaps.cartocdn.com/**', r => r.abort());
   const page = await ctx.newPage();
   const problems = [];
   page.on('pageerror', e => problems.push('pageerror: ' + e.message));

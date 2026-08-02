@@ -80,11 +80,40 @@ deviates more than 8° from the mean. That threshold is what keeps the dates hon
 
 ## Known data issues
 
-- **Around seventeen anchors sit more than 250 m from the street they cite**, measured
-  against OpenStreetMap. Four that pointed at an entirely different neighbourhood were
-  corrected (Los Gatos, Fremont's Capitol Ave, Point Richmond, Foster City). The rest are
-  approximate but land in the right place; they are listed in the pull request that
-  introduced the bearings if you want to work through them.
+- **Eighteen anchors sit more than 250 m from the street they cite**, measured against
+  OpenStreetMap while deriving the bearings. Four others pointed at an entirely different
+  neighbourhood and were corrected: Downtown Los Gatos was a kilometre into a residential
+  subdivision, Fremont's Capitol Ave was in Irvington, Point Richmond was at Brickyard
+  Cove, and Foster City was 700 m off Edgewater Blvd.
+
+  The remaining eighteen still land in the right town and are left alone, since the
+  footer describes coordinates as reference points rather than boundaries. If you want to
+  tighten them, this is the list, worst first:
+
+  | Entry | Distance from its street |
+  |---|---|
+  | Lafayette | 684 m from Mount Diablo Blvd |
+  | Solano Ave. (Berkeley/Albany) | 671 m |
+  | Emeryville | 669 m from Bay St |
+  | Rohnert Park | 616 m from State Farm Dr |
+  | North Beach | 511 m from Columbus Ave |
+  | Rio Vista | 474 m from Main St |
+  | Hayward | 461 m from B St |
+  | Old Oakland | 416 m from 9th St |
+  | San Mateo | 388 m from B St |
+  | Albany | 380 m from Solano Ave |
+  | Los Altos Hills | 369 m from Fremont Rd |
+  | Vallejo | 329 m from Georgia St |
+  | Oakland Chinatown | 304 m from 8th St |
+  | Downtown Campbell | 302 m from Campbell Ave |
+  | Downtown Sunnyvale | 282 m from Murphy Ave |
+  | Belvedere | 256 m from Beach Rd |
+  | Dublin | 254 m from Donlon Way |
+  | Alviso (San Jose) | 254 m from Elizabeth St |
+
+- **Six streets never resolved to OpenStreetMap geometry** and so have no bearing:
+  Pacifica, Main Street Cupertino (OSM calls it "Main Street Driveway"), Union City's Old
+  Alvarado, Antioch's Rivertown, San Ramon, and American Canyon.
 - **Palo Alto is split across two regions.** `Downtown Palo Alto` is filed under South Bay
   and `California Ave (Palo Alto)` under Peninsula. Both are defensible for a city on the
   boundary, but grouping by region separates them. Left alone deliberately — pick one

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Downtown Ledger">
+  <rect width="512" height="512" fill="#1E2A24"/>
+  <!-- A street running to a vanishing point, with the sun sitting in it. -->
+  <circle cx="256" cy="214" r="52" fill="#B65332"/>
+  <path d="M256 214 L96 448 L416 448 Z" fill="#ECEFE6"/>
+  <path d="M256 262 L238 448 L274 448 Z" fill="#1E2A24"/>
+  <rect x="96" y="300" width="52" height="148" fill="#ECEFE6"/>
+  <rect x="364" y="300" width="52" height="148" fill="#ECEFE6"/>
+</svg>

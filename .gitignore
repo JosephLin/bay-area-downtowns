@@ -10,6 +10,13 @@
 .claude/settings.local.json
 .claude/worktrees/
 
+# tools/README.md says `npm i playwright` for the two browser tests, and there
+# is no package.json to put it under — so npm drops node_modules/ in the repo
+# root. index.html itself still has no dependencies; nothing here ships.
+node_modules/
+package-lock.json
+package.json
+
 # Assets tree: deny by default, allowlist the docs.
 # Photography inputs/outputs live here, never in git —
 #   in/   irreplaceable originals (scans, historic photo repros)

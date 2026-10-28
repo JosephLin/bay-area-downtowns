@@ -1538,8 +1538,10 @@ const GROUP_ORDERS = { type:TYPE_ORDER, region:REGION_ORDER, origin:ORIGIN_ORDER
 const hasMap = (typeof L !== 'undefined');
 const map = hasMap ? L.map('map', { scrollWheelZoom:true }).setView([37.85,-122.35], 9) : null;
 if(hasMap){
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
+  // Esri's gray canvas needs no API key; CARTO's light_all started demanding one in 2026.
+  // Native tiles stop at z16; Leaflet upscales them beyond that.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ', maxNativeZoom:16, maxZoom:19
   }).addTo(map);
 } else {
   const el = document.getElementById('map');

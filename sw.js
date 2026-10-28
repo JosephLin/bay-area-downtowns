@@ -11,7 +11,7 @@
  * be blank offline — that is expected, not a failure.
  */
 const SHELL = 'ledger-shell-v1';
-const TILES = 'ledger-tiles-v1';
+const TILES = 'ledger-tiles-v2';
 const TILE_LIMIT = 400;
 
 const SHELL_URLS = [
@@ -51,7 +51,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  if (url.hostname.endsWith('basemaps.cartocdn.com')) {
+  if (url.hostname === 'server.arcgisonline.com') {
     e.respondWith((async () => {
       const cache = await caches.open(TILES);
       const hit = await cache.match(req);

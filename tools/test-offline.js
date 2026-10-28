@@ -42,7 +42,7 @@ const check = (label, cond, detail) => {
   // first (online) load matches what a real first visit caches locally.
   await page.route('**cdnjs.cloudflare.com/**', r => r.abort());
   await page.route('**fonts.g**', r => r.abort());
-  await page.route('**basemaps.cartocdn.com/**', r => r.abort());
+  await page.route('**server.arcgisonline.com/**', r => r.abort());
 
   await page.goto(BASE, { waitUntil: 'load' });
   await page.waitForTimeout(1200);

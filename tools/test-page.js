@@ -47,7 +47,7 @@ const check = (label, cond, detail) => {
   await ctx.addInitScript(LEAFLET_STUB);
   // Keep the stub authoritative no matter what the network can reach.
   await ctx.route('**cdnjs.cloudflare.com/**', r => r.abort());
-  await ctx.route('**basemaps.cartocdn.com/**', r => r.abort());
+  await ctx.route('**server.arcgisonline.com/**', r => r.abort());
   const page = await ctx.newPage();
   const problems = [];
   page.on('pageerror', e => problems.push('pageerror: ' + e.message));
